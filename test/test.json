@@ -1,0 +1,25 @@
+{
+    "request": {
+        "headers": {
+            "host": "caipiao.163.com",
+            "user-agent": "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:37.0) Gecko/20100101 Firefox/37.0",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "accept-language": "zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3",
+            "accept-encoding": "gzip, deflate",
+            "cookie": "JSESSIONID=8EC5E934328DD4AE3BB3283B2935C0DA; _ntes_nnid=f2dfd2ec4d00eef8d307c3511dd32525,1426218172351; _ntes_nuid=f2dfd2ec4d00eef8d307c3511dd32525; vinfo_n_f_l_n3=d000dcdb145c24e4.1.47.1426303363453.1429610381986.1429692006170; vjuids=709bcf5dd.14c7e57b645.0.515aa772f6d318; vjlast=1428048820.1428048820.30; mixDgLastPage=preBet_jczqsinglemixp.html; P_INFO=testcjx@126.com|1429524087|0|epay|00&99|bej&1429513862&caipiao#bej&null#10#0#0|&0|caipiao&search|testcjx@126.com; NTES_PASSPORT=vRbVe_.3C.WAftxbT3r7imDvb4OtRciNRtX_nffKIgvGT9Yq4TDYdxFwWVVWASJRNx1IkQBmRRm5Ds5zumB3Kjxcyk0dAa_vK; user=j%3A%7B%22username%22%3A%22cookie_name%22%2C%22password%22%3A%22cookie_pwd%22%7D; S_INFO=1429685125|1|#0&20#|testcjx@126.com; ANTICSRF=760939ade379b8bfc3763fdb3ecd4704; JSESSIONID=A1F4F6FBC3963BD7D6F177F81402E6DB; ne_analysis_trace_id=1429691832964; s_n_f_l_n3=d000dcdb145c24e41429670790923; NTES_SESS=qhTGft0G_Jpwd4pFoTX1lZJ1yPjik2Yhm9bOJGh0HHuEDIhtCDuhBv1jHxxH6KW3T_vhrTSgKcrCWfOLlT4l7eDuO92ku9qVjGVVHD7rk2W02M55kiW7BVkpB8EdcqbFrpqhGopXfcK5j321V7nXChTxFKqTjy0T7; pgr_n_f_l_n3=d000dcdb145c24e414296919388054836; nteslogger_exit_time=1429692006079",
+            "connection": "keep-alive",
+            "pragma": "no-cache",
+            "cache-control": "no-cache"
+        },
+        "body": {},
+        "query": {
+            "cjx": "cjx"
+        },
+        "hostname": "caipiao.163.com",
+        "pathname": "/ftl/shell.ftl",
+        "protocol": "http",
+        "httpVersion": "1.1",
+        "port": 80
+    },
+    "cdnUrl": "192.168.199.100"
+}
