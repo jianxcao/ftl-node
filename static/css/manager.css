@@ -1,0 +1,102 @@
+@font-face {
+  font-family: 'Glyphicons Halflings';
+  src: url('../lib/bootstrap/fonts/glyphicons-halflings-regular.eot');
+  src: url('../lib/bootstrap/fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('../lib/bootstrap/fonts/glyphicons-halflings-regular.woff') format('woff'), url('../fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('../fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
+}
+header{
+	position: relative;
+}
+/*menu样式*/
+.sidebar{
+	position: relative;
+}
+.sidebar .nav{
+	padding-bottom: 5px;
+}
+.sidebar .nav dd, .sidebar .nav dt{
+	cursor: pointer;
+	position: relative;
+}
+.sidebar .nav .nav dd:hover, .sidebar .nav dt:hover{
+	background: #e5f3fb;
+	-webkit-box-shadow: 0px 0px 1px 1px #70c0e7;
+	box-shadow: 0px 0px 1px 1px #70c0e7;
+}
+.sidebar .nav .nav dd:active,
+.sidebar .nav dt:active,
+.sidebar .nav .nav dd.active,
+.sidebar .nav dt.active{
+	-webkit-box-shadow: 0px 0px 1px 1px #dedede;
+	box-shadow: 0px 0px 1px 1px #dedede;
+	background: #f7f7f7;
+}
+.sidebar .nav dt{
+	margin-left: -36px;
+	padding-left: 36px;
+}
+.sidebar .nav dd:last-child{
+	padding-bottom: 0px;
+}
+.sidebar .nav dd > .nav dd{
+	padding-left: 36px;
+}
+.sidebar .nav dd > .nav dd{
+	height: 24px;
+	line-height: 24px;
+}
+.sidebar .nav span.del-icon,
+.sidebar .nav span.dis-icon{
+	display: none;
+	position: absolute;
+	left: -2px;
+	padding: 4px 3px;
+}
+.sidebar .nav span.dis-icon{
+	left: 16px;
+}
+.sidebar .nav dt span.dis-icon,
+.sidebar .nav dt span.del-icon{
+	padding: 2px 3px;
+}
+.sidebar .nav dd > .nav dd:hover span.del-icon,
+.sidebar .nav dd > .nav dd:hover span.dis-icon,
+.sidebar .nav dt:hover span.del-icon,
+.sidebar .nav dt:hover span.dis-icon{
+	display: block;
+}
+.silde-col{
+	border-right:  1px solid #ddd;
+}
+.content-col{
+	border-left: 1px solid #ddd;
+	margin-left: -1px;
+}
+.create-path{
+	margin-right: 12px;
+}
+.move-icon,
+.dis-icon,
+.del-icon{
+	padding: 6px 3px;
+}
+.move-icon{
+	cursor: move;
+}
+.del-icon{
+	cursor: pointer;
+}
+.folder-icon{
+	margin-right: 8px;
+}
+.sortable-ghost{
+	border:1px dotted #2b2b2b;
+	opacity: .8;
+}
+/*右侧内容区域最小高度*/
+.content-col{
+	min-height: 450px;
+}
+/*创建分支下的样式*/
+#create-branch .group-name-wrap{
+	width: 100%;
+}
