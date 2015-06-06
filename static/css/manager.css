@@ -6,6 +6,12 @@
 header{
 	position: relative;
 }
+.disabled{
+	color: #ccc!important;
+}
+.disabled input{
+	color: #ccc!important;
+}
 /*menu样式*/
 .sidebar{
 	position: relative;
@@ -39,10 +45,12 @@ header{
 }
 .sidebar .nav dd > .nav dd{
 	padding-left: 36px;
+	overflow: hidden;
 }
 .sidebar .nav dd > .nav dd{
 	height: 24px;
 	line-height: 24px;
+	overflow: hidden;
 }
 .sidebar .nav span.del-icon,
 .sidebar .nav span.dis-icon{

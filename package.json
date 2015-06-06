@@ -25,6 +25,11 @@
     "to",
     "html"
   ],
+  "homepage": "https://github.com/jianxcao/node-ftl",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jianxcao/node-ftl.git"
+  },
   "author": "jxcao",
   "license": "MIT",
   "devDependencies": {}

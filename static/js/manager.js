@@ -1,8 +1,14 @@
 (function($) {
+	var getGuid = function() {
+		getGuid.__id = getGuid.__id || 10;
+		getGuid.__id = getGuid.__id + 1;
+		return getGuid.__id;
+	};
 	var manager = {
 		cache: {
 			// 所有的路径存放
-			setData: {}
+			setData: {},
+			sortObj: {}
 		},
 		init: function() {
 			$.get(baseUrl + "sys/get_config_ajax.html").then(function(data) {
@@ -18,34 +24,37 @@
 			}, function() {
 				console.error("loading error");
 				manager.cache.setData = {};
-			}).always(function() {
+			})
+			.always(function() {
 				manager.cache.panelEle = $('.content-col');
 				manager.cache.sidebarEle = $('.sidebar');
-				manager.initDefaultData();
+			})
+			.then(manager.initDefaultData)
+			.always(function() {
 				manager.initSideNav();
-				manager.navChangePos();
+				manager.navChangeSort();
 				manager.initMenu();
 				manager.initProjectPanelEvt();
 				manager.initSave();
-			});
+			})
 		},
 		initDefaultData: function() {
-			var setData = this.cache.setData;
+			var setData = manager.cache.setData;
 			if (!setData.host) {
 				setData.host = [];
 			}
 			// 初始化左侧菜单
-			manager.getTplByPath("/tpl/manager-menu.tpl", function(tpl) {
+			return manager.getTplByPath("/tpl/manager-menu.tpl").then(function(tpl) {
+				var d = $.Deferred();
 				var html = $.template(tpl, setData.host);
 				manager.cache.sidebarEle.append(html);
 			});
-			return this;
 		},
 		// 左侧菜单初始化
 		initSideNav: function() {
-			// 展开收起
 			var sidebarEle = this.cache.sidebarEle,
 				panelEle = this.cache.panelEle;
+			// 展开收起
 			sidebarEle.delegate('dt', 'click', function(e) {
 				var me = $(this),
 					dd = me.next('dd'),
@@ -58,90 +67,106 @@
 					folderIcon.addClass('glyphicon-folder-close').removeClass('glyphicon-folder-open');
 				}
 			// 删除
-			}).delegate('.del-icon', 'click', function(e) {
+			})
+			.delegate('.del-icon', 'click', function(e) {
 				var me = $(this),
 					dd = me.closest('dd[data-fun]'),
 					dt = me.closest('dt'), dl,
-					tmp,
+					tmp, groupName, branchName,
 					host = manager.cache.setData.host;
 				// 如果选择的是一个分支
 				if (dd.length) {
-					tmp = manager.findBranch($.trim(dd.parents('dl[data-fun="group"]').find('dt').text()), $.trim(dd.text()));
+					groupName = dd.parent().attr('data-group-name');
+					branchName = dd.attr('data-branch-name');
+					tmp = manager.findBranch(groupName, branchName);
 					if (tmp) {
-						tmp.group.branches.splice(tmp.index, 1);
 						// 如果当前分支是激活的
-						if (dd.hasClass('active')) {
-							panelEle.html('');
-						}
+						panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']").remove();
 						dd.remove();
+						tmp.group.branches.splice(tmp.index, 1);
 					}
 				}
 				//  如果选择的是一个分组，直接删除这个分组
 				if (dt.length) {
-					tmp = manager.findGroup($.trim(dt.text()));
+					groupName = dt.attr('data-group-name');
+					tmp = manager.findGroup(groupName);
 					if (tmp) {
 						dl = dt.closest('dl');
-						if (dl.find('dd.active[data-fun="project"]').length) {
-							panelEle.html('');
-						}
+						panelEle.find(".form-wrap[data-group-name='" + groupName + "']").remove();
 						dl.remove();
 						host.splice(tmp.index, 1);
 					}
 				}
 				return false;
 				// 禁用
+			// 禁止用
 			}).delegate('.dis-icon', 'click', function(e) {
-				var me = $(this);
+				var me = $(this), tmp, status;
 				var dd = me.closest('dd[data-fun]');
 				var dt = me.closest('dt');
 				var dl, activeDD;
+				var groupName, branchName;
 				// 如果选择的是一个分支
 				if (dd.length) {
 					// 找到dl元素
-					dl = dd.closest('dl');
-					// 整个分组处于不可用状态--下面的分支都不可用
-					if (dl.hasClass('disabled')) {
-						if (dd.hasClass('active')) {
-							panelEle.removeClass('disabled');
-						}
-						dd.removeClass('disabled');
-						dl.removeClass('disabled');				
-					} else {
-						if (dd.hasClass('disabled')) {
-							// 如果当前分支是激活的
-							if (dd.hasClass('active')) {
-								panelEle.removeClass('disabled');
-							}
-							dd.removeClass('disabled');
-						} else {
-							if (dd.hasClass('active')) {
-								panelEle.addClass('disabled');
-							}
-							dd.addClass('disabled');
-						}
+					dl = dd.closest('dl[data-fun]');
+					groupName = dl.attr('data-group-name');
+					branchName = dd.attr('data-branch-name');
+					tmp = manager.findBranch(groupName, branchName);
+					status = !dd.hasClass('disabled');
+					tmp.branch.disabled = status;
+					dd[status ? "addClass" : "removeClass"]('disabled');
+					if (tmp.branch.val && tmp.branch.val.length) {
+						tmp.branch.val.forEach(function(one) {
+							one.disabled = status;
+						});
 					}
+					panelEle.find('.form-wrap[data-group-name="' + groupName + '"][data-branch-name="' + branchName + '"]')
+						.find('.drag-wrap .form-group')[status ? "addClass" : "removeClass"]('disabled');
+					// 循环判断一个分组下的所有分支是否全部都是禁用的
+					status = true;
+					$.each(tmp.group.branches, function(inedx, one) {
+						if (!one.disabled) {
+							status = false;
+							return;
+						}
+					});
+					tmp.group.disabled = status;
+					dl[status ? "addClass" : "removeClass"]('disabled');
 				}
-				//  如果选择的是一个分组，直接删除这个分组
+				//  如果选择的是一个分组
 				if (dt.length) {
 					dl = dt.closest('dl');
-					activeDD = dl.find('dd.active[data-fun]');
-					if (dl.hasClass('disabled')) {
-						dl.removeClass('disabled');
-						if (activeDD.length) {
-							panelEle.removeClass('disabled');
-						}
-					} else {
-						dl.addClass('disabled');
-						if (activeDD.length) {
-							panelEle.addClass('disabled');
+					groupName = dl.attr('data-group-name');
+					tmp = manager.findGroup(groupName);
+					if (tmp) {
+						status = !dl.hasClass('disabled');
+						dl[status ? "addClass" : "removeClass"]('disabled');
+						dl.find('dd[data-fun="project"]')[status ? "addClass" : "removeClass"]('disabled');
+						
+						panelEle.find('.form-wrap[data-group-name="' + groupName + '"]')
+						.find('.drag-wrap .form-group')[status ? "addClass" : "removeClass"]('disabled');
+						
+						// 同步内存状态
+						tmp.group.disabled = status;
+						if (tmp.group && tmp.group.branches.length) {
+							tmp.group.branches.forEach(function(branch) {
+								branch.disabled = status;
+								if (branch.val && branch.val.length) {
+									branch.val.forEach(function(one) {
+										one.disabled = status;
+									});
+								}
+							});
 						}
 					}
 				}
+				return false;
 			// 点击展开右侧面板
 			}).delegate('dd[data-fun]', 'click', function(e) {
 				var me = $(this),
-					branchName = $.trim(me.text()),
-					groupName = $.trim(me.closest('dd.item').prev().text());
+					branchName = me.attr('data-branch-name'),
+					groupName = me.parent().attr('data-group-name');
 				if (!me.hasClass('active')) {
 					sidebarEle.find('dd.active[data-fun="project"]').removeClass('active');
 					me.addClass('active');
@@ -167,7 +192,7 @@
 			}).delegate('.new-branch', 'click', function(e) {
 				var menuListWrap = $('.group-name-menu', createBranch);
 				var groupNames = treeWrap.find('dl[data-fun="group"] dt').map(function() {
-					return '<li><a href="javascript:;">' + $.trim($(this).text()) + '</a></li>';
+					return '<li><a href="javascript:;">' + this.getAttribute('data-group-name') + '</a></li>';
 				});
 				var html = Array.prototype.join.call(groupNames, "");
 				menuListWrap.html(html);
@@ -196,28 +221,28 @@
 			var host = this.cache.setData.host;
 			// 确认创建一个分组
 			createGroup.find('.confirm-create-group').click(function() {
-				var val = groupNameEle.val();
+				var val = groupNameEle.val(), gEle, err;
 				val = $.trim(val), err = "";
 				if (!val) {
 					err = "分组名称是必须的"
 				} else {
-					treeWrap.find('dl[data-fun="group"] dt').each(function() {
-						var txt = $(this).text();
-						if (txt == val) {
-							err = "已经有同名的分组存在"
-							return false;
-						}
-					});
+					gEle = manager.findGroup(val);
+					if (gEle) {
+						err = "已经有同名的分组存在";
+					}
 				}
 				if (err) {
 					alert(err);
 				} else {
-					manager.getTplByPath("/tpl/manager-menu.tpl", function(tpl) {
+					manager.getTplByPath("/tpl/manager-menu.tpl")
+					.then(function(tpl) {
 						var data = {
 							groupName: val
 						};
 						host.push(data);
 						var html = $.template(tpl, [data]);
+						html = $(html);
+						manager.branchSort(html.find('dd.item dl')[0]);
 						treeWrap.append(html);
 					});
 					createGroup.modal('hide');
@@ -256,7 +281,7 @@
 			});
 			// 创建一个分支
 			createBranch.find('.confirm-create-branch').click(function() {
-				var err = "", gEle, item, status = false,
+				var err = "", item, status = false,
 					groupName = $.trim(groupNameEle.val()),
 					branchName = $.trim(branchNameEle.val()),
 					tmp,
@@ -267,49 +292,30 @@
 				if (!branchName) {
 					err = "请输入您的分支名称";
 				}
-				treeWrap.find('dl[data-fun="group"] dt').each(function() {
-					var me = $(this);
-					var val = $.trim(me.text());
-					if (val == groupName) {
-						gEle = me;
-						return false;
-					}
-				});
 				// 已经存在这个分组
-				if (gEle) {
-					item = gEle.closest('dl').find('dd.item');
-					if (item && item.length) {
-						item.find('dd[data-fun="project"]').each(function() {
-							var val = $.trim($(this).text());
-							if (val == branchName) {
-								status = true;
-								return false;
-							} 
-						});
-						if (status) {
-							alert('该分支已经存在');
-							return;
-						}
-						tmp = manager.findGroup(groupName);
-						if (tmp) {
-							group = tmp.group;
-							if (!group.branches ) {
-								group.branches = [];
-								manager.branchPos(item.find('dl')[0]);
-							}
-							group.branches.push({
-								branchName: branchName
-							})
-							item.find('dl').append('<dd data-fun="project">' + branchName + 
-								'<span class="glyphicon glyphicon-ban-circle dis-icon">'
-								+ '</span><span class="glyphicon glyphicon-trash del-icon"></span></dd>')
-							.find('dd[data-fun]:last').trigger('click');
-
-						}
+				tmp = manager.findGroup(groupName);
+				if (tmp) {
+					status = manager.findBranch(groupName, branchName);
+					if (status) {
+						alert('该分支已经存在');
+						return;
 					}
+					group = tmp.group;
+					if (!group.branches ) {
+						group.branches = [];
+					}
+					group.branches.push({
+						branchName: branchName
+					});
+					item = treeWrap.find("[data-fun='group'][data-group-name='" + groupName + "'] dl[data-group-name='" + groupName + "']");
+					item.append('<dd data-fun="project" data-branch-name="'+ branchName +'">' + branchName + 
+						'<span class="glyphicon glyphicon-ban-circle dis-icon">'
+						+ '</span><span class="glyphicon glyphicon-trash del-icon"></span></dd>')
+					.find('dd[data-fun]:last').trigger('click');
 				// 当前分组不存在
 				} else {
-					manager.getTplByPath("/tpl/manager-menu.tpl", function(tpl) {
+					manager.getTplByPath("/tpl/manager-menu.tpl")
+					.then(function(tpl) {
 						var data = {
 							groupName: groupName,
 							branches: [{
@@ -323,7 +329,7 @@
 						treeWrap.append(html);
 						dl = html.find('dd.item dl');
 						dl.find('dd[data-fun]:last').trigger('click');
-						manager.branchPos(dl[0]);
+						manager.branchSort(dl[0]);
 					});
 				}
 				if (err) {
@@ -335,100 +341,160 @@
 			return this;
 		},
 		// 左侧菜单交换位置
-		navChangePos: function() {
+		navChangeSort: function() {
 			var sidebar = this.cache.sidebarEle;
 			new Sortable(sidebar[0], {
 				group: "group",
-				sort: true,
 				animation: 150,
 				handle: "dt",
 				ghostClass: "sortable-ghost",
-				scroll: true,
-				draggable: "dl"
+				scroll: false,
+				draggable: "dl",
+				onEnd: function (evt) {
+					var oldIndex = evt.oldIndex, val, ex,
+						newIndex = evt.newIndex;
+					// 找到父元素
+					var ele = $(this.el),
+						setData = manager.cache.setData,
+						host = setData.host;
+					if (host && host.length) {
+						if(host[newIndex] && host[oldIndex]) {
+							ex = host[oldIndex];
+							host[oldIndex] = host[newIndex];
+							host[newIndex] = ex;
+						}
+					}
+				}
 			});
 			sidebar.find('dl[data-fun="group"] dd.item dl').each(function() {
-				manager.branchPos(element);
+				manager.branchSort(this);
 			});
 			return this;
 		},
 		// 分支位置交换初始化方法
-		branchPos: function(element) {
+		branchSort: function(element) {
 			new Sortable(element, {
-				sort: true,
 				animation: 150,
 				ghostClass: "sortable-ghost",
-				scroll: true,
+				scroll: false,
 				handle: "dd",
-				draggable: "dd"
+				draggable: "dd",
+				onEnd: function (evt) {
+					var oldIndex = evt.oldIndex, val, tmp, ex,
+						newIndex = evt.newIndex;
+					// 找到父元素
+					var ele = $(this.el),
+						groupName = ele.attr('data-group-name');
+					tmp = manager.findGroup(groupName);
+					if (tmp && tmp.group && tmp.group.branches) {
+						val = tmp.group.branches;
+						if(val[newIndex] && val[oldIndex]) {
+							ex = val[oldIndex];
+							val[oldIndex] = val[newIndex];
+							val[newIndex] = ex;
+						}
+					}
+				}
 			});
 			return this;
 		},
 		// 右侧panel上的事件
 		initProjectPanelEvt: function() {
 			var content = this.cache.panelEle;
-			var html =	['<div class="form-group">',
-							'<label class="col-md-1 control-label">路径</label>',
-							'<div class="col-md-4">',
-								'<input type="text" class="form-control" placeholder="请输入项目路径" name="codePath">',
-							'</div>',
-							'<label class="col-md-1 control-label">虚拟路径</label>',
-							'<div class="col-md-4">',
-								'<input type="text" class="form-control" placeholder="请输入虚拟路径" name="virtualPath">',
-							'</div>',
-							'<div class="col-md-2">',
-								'<span class="glyphicon glyphicon-move move-icon"></span>',
-								'<span class="glyphicon glyphicon-trash del-icon"></span>',
-							'</div>',
-						'</div>'].join('')
-			content.on('click', '.create-path', function(e) {
-				content.find('.form-wrap').append(html);
+			this.getTplByPath("/tpl/manager-one-content.tpl").then(function(html) {
+				content.on('click', '.create-path', function(e) {
+					var me = $(this);
+					me.closest('.form-wrap').find('.drag-wrap').append(html);
+				})
+				.on('click', ".del-icon", function() {
+					var me = $(this);
+					me.closest('.form-group').remove();
+				});
 			});
 			return this;
 		},
 		// 点击菜单后右侧panel初始化
 		initProjectPanel: function(groupName, branchName) {
-			manager.getTplByPath("/tpl/manager-content.tpl", function(tpl) {
-				var data, html, tmp;
-				tmp = manager.findBranch(groupName, branchName);
-				data = $.extend({
-					groupName: groupName,
-					branchName: branchName
-				}, tmp ? tmp.branch : null);
-				html = $.template(tpl, data);
-				manager.cache.panelEle.html(html);
-			});
+			var panelEle = manager.cache.panelEle,
+				allFormWrap = panelEle.find('.form-wrap');
+				current = allFormWrap.filter("[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
+			if (current.length) {
+				allFormWrap.hide();
+				current.show();
+			} else {
+				manager.getTplByPath("/tpl/manager-content.tpl")
+				.then(function(tpl) {
+					allFormWrap.hide();
+					var data, html, tmp;
+					tmp = manager.findBranch(groupName, branchName);
+					data = $.extend({
+						groupName: groupName,
+						branchName: branchName
+					}, tmp ? tmp.branch : null);
+					html = $.template(tpl, data);
+					manager.cache.panelEle.append(html);
+					current = panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
+					new Sortable(current.find('.drag-wrap')[0], {
+						animation: 150,
+						ghostClass: "sortable-ghost",
+						scroll: false,
+						handle: ".move-icon",
+						draggable: ".form-drag",
+						onEnd: function (evt) {
+							var oldIndex = evt.oldIndex, val, tmp, ex,
+								newIndex = evt.newIndex;
+							// 找到父元素
+							var ele = $(this.el).closest('.form-wrap'),
+								branchName = ele.attr('data-branch-name'),
+								groupName = ele.attr('data-group-name');
+							tmp = manager.findBranch(groupName, branchName);
+							if (tmp && tmp.branch && tmp.branch.val) {
+								val = tmp.branch.val;
+								if(val[newIndex] && val[oldIndex]) {
+									ex = val[oldIndex];
+									val[oldIndex] = val[newIndex];
+									val[newIndex] = ex;
+								}
+							}
+						}
+					});
+				});
+			}
 			return this;
 		},
 		// 更新面板的数据
-		setCurrentPanelData: function() {
-			var content = this.cache.panelEle,
-				formGroup = content.find('.form-group'),
-				groupName = content.find('.form-wrap').attr('data-group-name'),
-				branchName = content.find('.form-wrap').attr('data-branch-name'),
-				tmp,
-				data = {};
-			formGroup.each(function() {
+		setPanelData: function() {
+			var content = this.cache.panelEle;
+			content.find('.form-wrap[data-branch-name][data-group-name]').each(function() {
 				var me = $(this),
-					inputs = me.find('input'),
-					one = {};
-				inputs.each(function() {
-					if (this.value) {
-						if(this.name == 'basePath') {
-							data.basePath = this.value.replace(/\\/g, "/");
-						} else {
-							one[this.name] = this.value.replace(/\\/g, "/");
+					formGroup = me.find('.form-group'),
+					groupName = me.attr('data-group-name'),
+					branchName = me.attr('data-branch-name'),
+					tmp,
+					data = {};
+				formGroup.each(function() {
+					var me = $(this),
+						inputs = me.find('input'),
+						one = {};
+					inputs.each(function() {
+						if (this.value) {
+							if(this.name == 'basePath') {
+								data.basePath = this.value.replace(/\\/g, "/");
+							} else {
+								one[this.name] = this.value.replace(/\\/g, "/");
+							}
 						}
+					});
+					if (!$.isEmptyObject(one)) {
+						data.val = data.val || [];
+						data.val.push(one);
 					}
 				});
-				if (!$.isEmptyObject(one)) {
-					data.val = data.val || [];
-					data.val.push(one);
+				tmp = manager.findBranch(groupName, branchName);
+				if (tmp && tmp.branch) {
+					$.extend(tmp.branch, data);
 				}
-			});
-			tmp = manager.findBranch(groupName, branchName);
-			if (tmp && tmp.branch) {
-				$.extend(tmp.branch, data);
-			}
+			})
 			return this;
 		},
 		// 找到一个分组
@@ -472,27 +538,26 @@
 			return retVal;
 		},
 		// 获取模板
-		getTplByPath: function(path, callBack) {
+		getTplByPath: function(path) {
+			var d = $.Deferred();
 			manager.cache.tpl = manager.cache.tpl || {};
 			if (manager.cache.tpl[path]) {
-				callBack(manager.cache.tpl[path]);
+				d.resolve(manager.cache.tpl[path]);
+				return d;
 			} else {
-				$.get(window.cdnBaseUrl + path, function(data, status) {
-					if (data && status == "success") {
-						callBack(data);
-						manager.cache.tpl[path] = data;
-					} else {
-						alert("路径为" + path +"的模板载入错误");
-					}
+				return $.get(window.cdnBaseUrl + path)
+				.fail(function() {
+					alert("路径为" + path +"的模板载入错误");
+				}).success(function(data) {
+					manager.cache.tpl[path] = data;
 				});
 			}
-			return this;
 		},
 		// 保存
 		initSave: function() {
 			$('.save').click(function(e) {
 				//先将当前面版中的数据更新到setData中去
-				manager.setCurrentPanelData();
+				manager.setPanelData();
 				$.post(baseUrl + 'sys/set_config_ajax.html', {
 					data: JSON.stringify(manager.cache.setData)
 				}).then(function(data) {
