@@ -86,6 +86,7 @@ header{
 .dis-icon,
 .del-icon{
 	padding: 6px 3px;
+	cursor: pointer;
 }
 .move-icon{
 	cursor: move;

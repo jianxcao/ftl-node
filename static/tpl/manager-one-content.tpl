@@ -10,5 +10,6 @@
 	<div class="col-md-2">
 		<span class="glyphicon glyphicon-move move-icon"></span>
 		<span class="glyphicon glyphicon-trash del-icon"></span>
+		<span class="glyphicon glyphicon-ban-circle dis-icon"></span>
 	</div>
 </div>

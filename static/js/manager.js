@@ -128,11 +128,13 @@
 					$.each(tmp.group.branches, function(inedx, one) {
 						if (!one.disabled) {
 							status = false;
-							return;
+							return false;
 						}
 					});
-					tmp.group.disabled = status;
-					dl[status ? "addClass" : "removeClass"]('disabled');
+					if (tmp.group.disabled !== status) {
+						tmp.group.disabled = status;
+						dl[status ? "addClass" : "removeClass"]('disabled');
+					}
 				}
 				//  如果选择的是一个分组
 				if (dt.length) {
@@ -207,9 +209,24 @@
 				});
 			// 禁用全部
 			}).delegate('.disabled-all', 'click', function(e) {
-				var status = !!treeWrap.find('dl[data-fun]').addClass('disabled').find('dd.active[data-fun]').length;
-				if (status) {
-					panelEle.addClass('disabled');
+				treeWrap.find('dl[data-fun], dd[data-fun]').addClass('disabled');
+				panelEle.find('.drag-wrap .form-group').addClass('disabled');
+				var setData = manager.cache.setData;
+				// 修改内存数据
+				if (setData.host && setData.host.length) {
+					setData.host.forEach(function(oneHost) {
+						oneHost.disabled = true;
+						if (oneHost.branches && oneHost.branches.length) {
+							oneHost.branches.forEach(function(branch) {
+								branch.disabled = true;
+								if (branch.val && branch.val.length) {
+									branch.val.forEach(function(one) {
+										one.disabled = true;
+									});
+								}
+							});
+						}
+					});
 				}
 			});
 			manager.initGroupDialog(treeWrap, createGroup);
@@ -343,13 +360,12 @@
 		// 左侧菜单交换位置
 		navChangeSort: function() {
 			var sidebar = this.cache.sidebarEle;
-			new Sortable(sidebar[0], {
+			var group = new Sortable(sidebar[0], {
 				group: "group",
 				animation: 150,
 				handle: "dt",
 				ghostClass: "sortable-ghost",
-				scroll: false,
-				draggable: "dl",
+				draggable: ".nav",
 				onEnd: function (evt) {
 					var oldIndex = evt.oldIndex, val, ex,
 						newIndex = evt.newIndex;
@@ -358,10 +374,11 @@
 						setData = manager.cache.setData,
 						host = setData.host;
 					if (host && host.length) {
-						if(host[newIndex] && host[oldIndex]) {
-							ex = host[oldIndex];
-							host[oldIndex] = host[newIndex];
-							host[newIndex] = ex;
+						if(typeof oldIndex == "number" && typeof newIndex === "number" && 
+							host[newIndex] && host[oldIndex]) {
+							ex = host.splice(oldIndex, 1);
+							ex.unshift(newIndex, 0);
+							Array.prototype.splice.apply(host, ex);
 						}
 					}
 				}
@@ -376,9 +393,15 @@
 			new Sortable(element, {
 				animation: 150,
 				ghostClass: "sortable-ghost",
-				scroll: false,
 				handle: "dd",
 				draggable: "dd",
+				// 阻止冒泡防止下层事件对自己的影响
+				filter: function(evt, target) {
+					if ($(target).closest('dd.item').length) {
+						evt.stopPropagation();
+						return false;
+					}
+				},
 				onEnd: function (evt) {
 					var oldIndex = evt.oldIndex, val, tmp, ex,
 						newIndex = evt.newIndex;
@@ -386,13 +409,12 @@
 					var ele = $(this.el),
 						groupName = ele.attr('data-group-name');
 					tmp = manager.findGroup(groupName);
-					if (tmp && tmp.group && tmp.group.branches) {
+					if (typeof oldIndex == "number" && typeof newIndex === "number" && 
+						oldIndex !== newIndex && tmp && tmp.group && tmp.group.branches) {
 						val = tmp.group.branches;
-						if(val[newIndex] && val[oldIndex]) {
-							ex = val[oldIndex];
-							val[oldIndex] = val[newIndex];
-							val[newIndex] = ex;
-						}
+						ex = val.splice(oldIndex, 1);
+						ex.unshift(newIndex, 0);
+						Array.prototype.splice.apply(val, ex);
 					}
 				}
 			});
@@ -400,7 +422,7 @@
 		},
 		// 右侧panel上的事件
 		initProjectPanelEvt: function() {
-			var content = this.cache.panelEle;
+			var sidebarEle = this.cache.sidebarEle, content = this.cache.panelEle;
 			this.getTplByPath("/tpl/manager-one-content.tpl").then(function(html) {
 				content.on('click', '.create-path', function(e) {
 					var me = $(this);
@@ -409,7 +431,52 @@
 				.on('click', ".del-icon", function() {
 					var me = $(this);
 					me.closest('.form-group').remove();
-				});
+					return false;
+				})
+				// 禁用某个分支下的某一条
+				.on('click', ".dis-icon", function() {
+					var dd = $(this).closest('.form-group'),
+						formWrap = dd.closest('.form-wrap'),
+						branchName = formWrap.attr('data-branch-name'),
+						groupName = formWrap.attr('data-group-name'),
+						status, tmp,
+						index = dd.index();
+					if (branchName && groupName) {
+						status = !dd.hasClass('disabled');
+						tmp = manager.findBranch(groupName, branchName);
+						// 改自己的状态
+						if (tmp.branch && tmp.branch.val && tmp.branch.val[index]) {
+							tmp.branch.val[index].disabled = status;
+							dd[status ? "addClass" : "removeClass"]('disabled');
+							status = true;
+							// 只要有一个是false就是false
+							$.each(tmp.branch.val, function(index, one) {
+								if (!one.disabled) {
+									status = false;
+									return false;
+								}
+							});
+							if (tmp.branch.disabled !== status) {
+								tmp.branch.disabled = status;
+								sidebarEle.find("dl[data-fun='group'][data-group-name='" + groupName + "']")
+								[status ? "addClass" : "removeClass"]('disabled');
+							}
+							status = true;
+							$.each(tmp.group.branches, function(index, branch) {
+								if (!branch.disabled) {
+									status = false;
+									return false;
+								}
+							});
+							if (tmp.group.disabled !== status) {
+								tmp.group.disabled = status;
+								sidebarEle.find("dd[data-branch-name='" + branchName + "'][data-fun='project']")
+								[status ? "addClass" : "removeClass"]('disabled');
+							}
+						}
+					}
+					return false;
+				})
 			});
 			return this;
 		},
@@ -448,12 +515,13 @@
 								branchName = ele.attr('data-branch-name'),
 								groupName = ele.attr('data-group-name');
 							tmp = manager.findBranch(groupName, branchName);
-							if (tmp && tmp.branch && tmp.branch.val) {
+							if (typeof oldIndex == "number" && typeof newIndex === "number" && 
+								tmp && tmp.branch && tmp.branch.val) {
 								val = tmp.branch.val;
 								if(val[newIndex] && val[oldIndex]) {
-									ex = val[oldIndex];
-									val[oldIndex] = val[newIndex];
-									val[newIndex] = ex;
+									ex = val.splice(oldIndex, 1);
+									ex.unshift(newIndex, 0);
+									Array.prototype.splice.apply(val, ex);
 								}
 							}
 						}
@@ -486,6 +554,9 @@
 						}
 					});
 					if (!$.isEmptyObject(one)) {
+						if (me.hasClass('form-drag')) {
+							one.disabled = !!me.hasClass('disabled');
+						}
 						data.val = data.val || [];
 						data.val.push(one);
 					}

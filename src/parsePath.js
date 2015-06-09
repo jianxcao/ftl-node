@@ -57,6 +57,9 @@ parseBranch = function(branch, changePathname) {
 	}
 	for(var j = 0; j < branch.val.length; j++) {
 		current = branch.val[j];
+		if (current.disabled) {
+			continue;
+		}
 		codePath = current.codePath;
 		if (codePath) {
 			// 将基础路径和 代码路径合并
