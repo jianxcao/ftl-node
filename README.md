@@ -14,7 +14,9 @@ freemarker server
 
 ##使用方法
 ###安装
-下载后放在任意目录
+```
+npm install ftl-node  -g 
+```
 ###使用
 输入命令 npm start,浏览器端会打开一个界面,通过界面配置即可
 
