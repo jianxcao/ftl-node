@@ -74,5 +74,5 @@ app.listen(port, function() {
 	}
 	log.info('后台管理页面打开中');
 
-	child_process.exec("start "+ uri);
+	child_process.exec([cmd, uri].join(' '));
 });

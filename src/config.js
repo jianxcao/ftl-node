@@ -13,8 +13,8 @@ var configInit = function() {
 	// Windows XP - 'C:\Documents and Settings\User\Application Data'
 	// Linux - '/var/local'
 	// 获取系统临时目录
-	var tmpPath = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + 'Library/Preference' : '/var/local');
-	dirPath = path.resolve(tmpPath, "node-ftl");
+	var tmpPath = process.env.APPDATA || (process.platform == 'darwin' ? path.join(process.env.HOME, 'Library/Preferences') : '/var/local');
+	dirPath = path.resolve(tmpPath, "ftl-node");
 	var exits = fs.existsSync(dirPath);
 	// 目录不存在
 	if (!exits) {
