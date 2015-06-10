@@ -11,7 +11,7 @@
 			sortObj: {}
 		},
 		init: function() {
-			$.get(baseUrl + "sys/get_config_ajax.html").then(function(data) {
+			$.get(baseUrl + "/sys/get_config_ajax.html").then(function(data) {
 				try{
 					if (typeof data == "string") {
 						data = JSON.parseJSON('data');
@@ -629,7 +629,7 @@
 			$('.save').click(function(e) {
 				//先将当前面版中的数据更新到setData中去
 				manager.setPanelData();
-				$.post(baseUrl + 'sys/set_config_ajax.html', {
+				$.post(baseUrl + '/sys/set_config_ajax.html', {
 					data: JSON.stringify(manager.cache.setData)
 				}).then(function(data) {
 					if (data == 1) {

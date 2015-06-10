@@ -11,12 +11,11 @@ var express = require('express'),
 	log = require('./src/log'),
 	app = express(),
 	subApp = require('./src/subApp'),
-	url = require('url'),
 	// subApp即内部系统应用的path
 	innerPath = '/___mySystemInner',
 	child_process = require('child_process');
 innerPath = innerPath.replace(/^\/|\/$/, "");
-innerPath = "/" + innerPath + "/"
+innerPath = "/" + innerPath
 
 
 // 初始化配置
@@ -24,8 +23,8 @@ var port;
 // 设置全局的 cdnurl
 app.locals.baseUrl = innerPath;
 subApp.locals.baseUrl = innerPath;
-app.locals.cdnBaseUrl =  innerPath + "static";
-subApp.locals.cdnBaseUrl =  innerPath + "static";
+app.locals.cdnBaseUrl =  innerPath + "/static";
+subApp.locals.cdnBaseUrl =  innerPath + "/static";
 
 // 解析参数
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -73,7 +72,7 @@ app.listen(port, function() {
 	// 启动一个默认浏览器打开后台管理页面
 	var cmd, uri = "http://127.0.0.1" + (port == 80 ? "" : ":" + port);
 	uri += innerPath;
-	uri += "sys/manager.html";	
+	uri += "/sys/manager.html";	
 	if (process.platform === 'win32') {
 	  cmd = 'start';
 	} else if (process.platform === 'linux') {
