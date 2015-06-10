@@ -5,6 +5,7 @@ var express = require('express'),
 	bodyParser = require('body-parser'),
 	serverStatic = require('./src/serverStatic'),
 	serverDir = require('./src/serverDir'),
+	commandConfig = require('./src/parseCommand'),
 	config = require('./src/config'),
 	serverFtl = require('./src/serverFtl'),
 	log = require('./src/log'),
@@ -16,6 +17,8 @@ var express = require('express'),
 	child_process = require('child_process');
 innerPath = innerPath.replace(/^\/|\/$/, "");
 innerPath = "/" + innerPath + "/"
+
+
 // 初始化配置
 var port;
 // 设置全局的 cdnurl
@@ -26,8 +29,14 @@ subApp.locals.cdnBaseUrl =  innerPath + "static";
 
 // 解析参数
 app.use(bodyParser.urlencoded({ extended: false }));
-// 通过配置文件获取端口
-port = config.get("port") || 80;
+if (commandConfig.port) {
+	port = commandConfig.port;
+	config.set('port', port);
+	config.save();
+} else {
+	// 通过配置文件获取端口
+	port = config.get("port") || 80;
+}
 
 app.disable('x-powered-by');
 // 设置模版
@@ -60,7 +69,7 @@ app.use(function(req, res, next){
 });
 
 app.listen(port, function() {
-	log.info('服务器成功启动');
+	log.info('服务器成功启动', '端口号码', port);
 	// 启动一个默认浏览器打开后台管理页面
 	var cmd, uri = "http://127.0.0.1" + (port == 80 ? "" : ":" + port);
 	uri += innerPath;

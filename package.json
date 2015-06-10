@@ -1,11 +1,12 @@
 {
   "name": "ftl-node",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "ftl parse to html",
   "main": "app.js",
   "dependencies": {
     "bluebird": "^2.9.24",
     "body-parser": "^1.12.3",
+    "commander": "^2.8.1",
     "cookie-parser": "^1.3.4",
     "ejs": "^2.3.1",
     "express": "^4.12.3",
@@ -15,7 +16,6 @@
     "parseurl": "^1.3.0",
     "utils-merge": "^1.0.0"
   },
-  "main": "app.js",
   "bin": {
     "ftl-server": "app.js",
     "ftl-node": "app.js"
