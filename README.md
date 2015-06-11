@@ -18,7 +18,34 @@ freemarker server
 npm install ftl-node  -g 
 ```
 ### 使用
-输入命令 ftl,浏览器端会打开一个界面,通过界面配置即可
+
+输入命令 ftl-node, 浏览器端会打开一个界面,通过界面配置即可
+
+输入命令 ftl-node -p 8080 可指定端口打开页面,端口会记住，下次打开会默认上次的端口
+
+####  支持request调用的方法
+```
+${request.getRequestURI()}
+${request.getRequestURL()}
+${request.getCookies()}
+${request.getHeaderNames()}
+${request.getHeader(String headerName)}
+${request.getQueryString()}
+${request.getParameter()}
+${request.getParameterMap()}
+${request.getParameterNames(String parName)}
+${request.getServerName()}
+${request.getServerPort()}
+${request.getProtocol()}
+${request.getScheme()}
+```
+
+## 注意事项
+1. 环境依赖于nodejs和java的jre请先安装 nodejs和jre
+2. 配置将记录于系统缓存文件中，请确保运行时有对系统缓存目录修改的权限,并注意如果缓存目录清除，将会删除配置文件
+
+##其他
+[帮助页面](https://github.com/jianxcao/ftl-node/blob/master/static/help.md)
 
 ## License
 
