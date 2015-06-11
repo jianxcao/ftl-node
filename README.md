@@ -44,7 +44,7 @@ ${request.getScheme()}
 1. 环境依赖于nodejs和java的jre请先安装 nodejs和jre
 2. 配置将记录于系统缓存文件中，请确保运行时有对系统缓存目录修改的权限,并注意如果缓存目录清除，将会删除配置文件
 
-##其他
+## 其他
 [帮助页面](https://github.com/jianxcao/ftl-node/blob/master/static/help.md)
 
 ## License
