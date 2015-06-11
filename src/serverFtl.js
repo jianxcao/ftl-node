@@ -41,7 +41,7 @@ exports = module.exports = function serveFtl(port) {
 				getReq(req, {}, webPort)
 				// 调用java解析ftl
 				.then(function(data) {
-					return parseFtl(res, pathObject.basePath, pathname, data, {});
+					return parseFtl(res, pathObject.basePath, pathObject.path, data, {});
 				})
 				.catch(function(err) {
 					if (typeof err == "string") {

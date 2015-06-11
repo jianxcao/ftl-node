@@ -123,11 +123,11 @@ exports.save = function() {
 	var myData = JSON.stringify(data);
 	log.debug(filePath, "----save");
 	try{
-		var fd = fs.openSync(filePath, "w+");
+		var fd = fs.openSync(filePath, "w+", "777");
 		fs.writeSync(fd, myData, null, "utf-8");
 		fs.closeSync(fd);
 	}catch(e) {
-		log.error(e);
+		throw e;
 	}
 };
 configInit();
