@@ -15,7 +15,7 @@ var config = require('../src/config');
  * @param {String} pathname
  * @return{String} path，返回一个绝对的文件路径，如果文件找到的话
  */
-var parsePath = function(pathname) {
+var parsePath = function(pathname, callBack) {
 	var pathTree = config.get();
 	// 获取路径
 	var pathname = path.normalize(pathname);
@@ -32,7 +32,7 @@ var parsePath = function(pathname) {
 			if (branchs && branchs.length) {
 				// 基础路径
 				for (var k = 0; k < branchs.length; k++) {
-					res = parseBranch(branchs[k], pathname);
+					res = parseBranch(branchs[k], pathname, callBack);
 					if (res) {
 						return res;
 					}
@@ -43,7 +43,7 @@ var parsePath = function(pathname) {
 		throw new Error('host下至少配置一个可用的组');
 	}
 };
-parseBranch = function(branch, changePathname) {
+parseBranch = function(branch, changePathname, callBack) {
 	var basePath;
 	var	current,
 		v, reg, p, codePath,
@@ -51,7 +51,8 @@ parseBranch = function(branch, changePathname) {
 	if (branch.disabled) {
 		return;
 	}
-	basePath = branch.basePath || "";
+	basePath = path.normalize(branch.basePath || "");
+
 	if (!(branch.val && branch.val.length)) {
 		return;
 	}
@@ -79,8 +80,15 @@ parseBranch = function(branch, changePathname) {
 			}
 		}
 		if (p) {
+			p = p.replace(/\\\\/g, "\\");
+			// 每个匹配的路径都去调用回调，这里仅仅是路径匹配了，不代表文件真正的存在
+			var status = false;
+			if (callBack && typeof callBack == 'function') {
+				status = callBack(basePath, p, codePath, changePathname);
+			}
 			exists = fs.existsSync(p);
-			if (exists) {
+			// 如果callBack返回true，即callBack认为这个路径是合法的就返回这个路径，并停止递归
+			if (exists || status) {
 				return {
 					fullPath: p,
 					basePath: codePath,

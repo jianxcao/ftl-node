@@ -11,6 +11,7 @@ var express = require('express'),
 	log = require('./src/log'),
 	app = express(),
 	subApp = require('./src/subApp'),
+	lessParse = require('./src/lessParse'),
 	// subApp即内部系统应用的path
 	innerPath = '/___mySystemInner',
 	child_process = require('child_process');
@@ -45,6 +46,7 @@ app.set('view engine', 'ejs');
 // 引用子app，内部使用该app
 app.use(innerPath, subApp);
 
+app.use(lessParse());
 // 运用静态文件路径---即生成一个路径表明当前文件路径
 app.use(serverDir());
 // 运用静态文件模块
@@ -84,3 +86,4 @@ app.listen(port, function() {
 
 	child_process.exec([cmd, uri].join(' '));
 });
+
