@@ -309,6 +309,10 @@
 				if (!branchName) {
 					err = "请输入您的分支名称";
 				}
+				if (err) {
+					alert(err);
+					return;
+				}
 				// 已经存在这个分组
 				tmp = manager.findGroup(groupName);
 				if (tmp) {
@@ -348,10 +352,6 @@
 						dl.find('dd[data-fun]:last').trigger('click');
 						manager.branchSort(dl[0]);
 					});
-				}
-				if (err) {
-					alert(err);
-					return;
 				}
 				createBranch.modal('hide');
 			});
