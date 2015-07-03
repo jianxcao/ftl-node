@@ -138,7 +138,7 @@ parseFtl = function(res, rootPath, path, data, option) {
 			})
 			.on('end', function() {
 				resove(rightData);
-			})
+			});
 			
 		}).then(function(rightData) {
 			return new Promise(function(resolve, reject) {
@@ -155,6 +155,7 @@ parseFtl = function(res, rootPath, path, data, option) {
 				});
 			});
 		}).then(function(data) {
+			console.log(data.rightData + "hahahahahha");
 			if (data.rightData) {
 				var finalData = data.rightData;
 				var reg = /<\/body>/;
@@ -164,12 +165,14 @@ parseFtl = function(res, rootPath, path, data, option) {
 				}
 				res.send(finalData);
 			} else {
-				res.render("500", {
-					message: data.wrongData || "ftl解析错误"
-				});
-			}
-			if (data.wrongData) {
-				// log.error(data.wrongData);
+				// 没有错误ftl输出为空
+				if (!data.wrongData) {
+					res.send(data.rightData);
+				} else {
+					res.render("500", {
+						message: data.wrongData || "ftl解析错误"
+					});
+				}
 			}
 		});
 };
