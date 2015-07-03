@@ -23,7 +23,7 @@ exports = module.exports = function lessParse() {
 		var pathObject;
 		var lessPath = "apache/less";
 		var cssPath = "apache/css2";
-		var tmp;
+		var tmp, status = false;
 		ext = ext.toLowerCase();
 		if (ext && ext == "css") {
 			if (false) {
@@ -43,10 +43,14 @@ exports = module.exports = function lessParse() {
 						//找到了对应的less文件
 						if (fs.existsSync(tmp)) {
 							parseLess(tmp, fullPath, res, next);
+							status = true;
 							return true;
 						}
 					}
 				});
+				if (!status) {
+					next();
+				}
 			}
 		} else {
 			next();
@@ -61,6 +65,8 @@ var parseToCurrent = function (dirname, basename, res, next) {
 	if (pathObject) {
 		// 读取less文件
 		parseLess(pathObject.fullPath, pathObject.fullPath.replace(/.less$/, ".css"), res, next);
+	} else {
+		next();
 	}
 };
 
