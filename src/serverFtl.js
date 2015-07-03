@@ -155,7 +155,6 @@ parseFtl = function(res, rootPath, path, data, option) {
 				});
 			});
 		}).then(function(data) {
-			console.log(data.rightData + "hahahahahha");
 			if (data.rightData) {
 				var finalData = data.rightData;
 				var reg = /<\/body>/;
