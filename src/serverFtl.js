@@ -38,7 +38,7 @@ exports = module.exports = function serveFtl(port) {
 
 
 				// 获取res中的一些数据
-				getReq(req, {}, webPort)
+				getReq(req, {ENV: "local_dev"}, webPort)
 				// 调用java解析ftl
 				.then(function(data) {
 					return parseFtl(res, pathObject.basePath, pathObject.path, data, {});
