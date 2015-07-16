@@ -181,18 +181,18 @@ var  getConsoleErrorString = function(messages) {
 	result = messages.map(function(val, index, com) {
 		var retVal = '', tmp;
 		if (val) {
-			if (!~val.indexOf("freemarker.log.JDK14LoggerFactory$JDK14Logger") == 0) {
-				if (index != 0) {
-					retVal += "console.groupEnd();"
+			if (!~val.indexOf("freemarker.log.JDK14LoggerFactory$JDK14Logger") === 0) {
+				if (index !== 0) {
+					retVal += "console.groupEnd();";
 				}
 				if (messages[index + 1]) {
 					tmp = messages[index + 1];
 					val = val.replace('freemarker.log.JDK14LoggerFactory$JDK14Logger error', tmp);
 					messages[index + 1] = '';
 				}
-				retVal += "console.groupCollapsed(\"%c" + val + "\", \"color:red\");"
+				retVal += "console.groupCollapsed(\"%c" + val + "\", \"color:red\");";
 			} else {
-				retVal = "console.log(\"%c" + val + "\", \"color:red\");"
+				retVal = "console.log(\"%c" + val + "\", \"color:red\");";
 			}
 		}
 		return retVal;
