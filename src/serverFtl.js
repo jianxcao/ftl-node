@@ -13,7 +13,6 @@ var parsePath = require('../src/parsePath');
 var jarFilePath = path.join(__dirname, "../lib/jar/ftl.jar");
 var spawn = require('child_process').spawn;
 var Promise = require('bluebird');
-var util = require('util');
 var iconv = require('iconv-lite');
 exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
@@ -48,7 +47,7 @@ exports = module.exports = function serveFtl(port) {
 						err = new Error(err);
 					}
 					next(err);
-				})
+				});
 			} else {
 				res.status(404);
 				res.render("404", {
@@ -61,8 +60,8 @@ exports = module.exports = function serveFtl(port) {
 	} else {
 		next();
 	}
-  }
-}
+  };
+};
 
 // 获取ftl数据
 getFtlData = function() {
@@ -77,7 +76,7 @@ getFtlData = function() {
 		ftlDataFileName = path.resolve(__dirname, ftlDataFileName);
 		fs.readFile(ftlDataFileName, {encoding: "UTF-8", flag: "r"}, function(err, data) {
 			if (err) {
-				reject(err)
+				reject(err);
 			} else {
 				try{
 					data = JSON.parse(jsonCompressor(data));
@@ -130,7 +129,7 @@ parseFtl = function(res, rootPath, path, data, option) {
 		cmd = spawn('java', ["-jar", jarFilePath, option, data]);
 		stdout = cmd.stdout;
 		stderr = cmd.stderr;
-		stderr.setEncoding('UTF-8');
+		//stderr.setEncoding('UTF8');
 		new Promise(function(resove, reject) {
 			var rightData = "";
 			stdout.on('data', function(chunk) {
@@ -144,9 +143,7 @@ parseFtl = function(res, rootPath, path, data, option) {
 			return new Promise(function(resolve, reject) {
 				var wrongData = "";
 				stderr.on("data", function(chunk) {
-					// log.debug(chunk.isEncoding("UTF-8"), "hahahah");
-					// wrongData += iconv.decode(chunk, 'win1251');
-					wrongData += chunk.toString();
+					wrongData += iconv.decode(chunk, 'GBK');
 				}).on('end', function() {
 					resolve({
 						rightData: rightData,
@@ -155,12 +152,15 @@ parseFtl = function(res, rootPath, path, data, option) {
 				});
 			});
 		}).then(function(data) {
+			
 			if (data.rightData) {
 				var finalData = data.rightData;
 				var reg = /<\/body>/;
-				var consoleError='<script> window.console && console.warn && console.warn("' + data.wrongData.replace(/"/g, "'").replace(/\n/g, "\\n").replace(/\r/g, "\\r") + '")</script>';
+				var message = data.wrongData.replace(/"/g, "'").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+				var messages = message.split(/\\r\\n/);
+				var consoleError='<script> if (window.console && console.log && console.group) {'+ getConsoleErrorString(messages) + '}  </script>';
 				if (data.wrongData) {
-					reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData+=consoleError);
+					reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData += consoleError);
 				}
 				res.send(finalData);
 			} else {
@@ -169,9 +169,34 @@ parseFtl = function(res, rootPath, path, data, option) {
 					res.send(data.rightData);
 				} else {
 					res.render("500", {
-						message: data.wrongData || "ftl解析错误"
+						message: ['<div>', data.wrongData.replace(/\n/g, "<br>"), '</div>'].join('') || "ftl解析错误"
 					});
 				}
 			}
 		});
+};
+//将ftl错误解析后扔到console。log中去
+var  getConsoleErrorString = function(messages) {
+	var result;
+	result = messages.map(function(val, index, com) {
+		var retVal = '', tmp;
+		if (val) {
+			if (!~val.indexOf("freemarker.log.JDK14LoggerFactory$JDK14Logger") == 0) {
+				if (index != 0) {
+					retVal += "console.groupEnd();"
+				}
+				if (messages[index + 1]) {
+					tmp = messages[index + 1];
+					val = val.replace('freemarker.log.JDK14LoggerFactory$JDK14Logger error', tmp);
+					messages[index + 1] = '';
+				}
+				retVal += "console.groupCollapsed(\"%c" + val + "\", \"color:red\");"
+			} else {
+				retVal = "console.log(\"%c" + val + "\", \"color:red\");"
+			}
+		}
+		return retVal;
+	});
+	result.push('console.groupEnd()');
+	return result.join("");
 };

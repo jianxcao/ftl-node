@@ -18,7 +18,7 @@ var config = require('../src/config');
 var parsePath = function(pathname) {
 	var pathTree = config.get();
 	// 获取路径
-	var pathname = path.normalize(pathname);
+	pathname = path.normalize(pathname);
 	var host = pathTree.host;
 	var oneGroup, branchs, res;
 	if (host && host.length) {
@@ -42,10 +42,11 @@ var parsePath = function(pathname) {
 	} else {
 		throw new Error('host下至少配置一个可用的组');
 	}
-};
+},
 parseBranch = function(branch, changePathname) {
 	var basePath;
 	var	current,
+		tmp,
 		v, reg, p, codePath,
 		exists;
 	if (branch.disabled) {
@@ -67,8 +68,13 @@ parseBranch = function(branch, changePathname) {
 			// 虚拟路径处理
 			if (current.virtualPath) {
 				v = path.normalize("/" + current.virtualPath);
+				changePathname = path.normalize(changePathname);
+				v = v.replace(/[\*\.\?\+\$\^\[\]\(\)\{\}\|\\\/]/g, function(cur) {
+					return "\\" + cur;
+				});
+				tmp = ["^", v].join('');
 				// 创建正则
-				reg = new RegExp(["^", v].join('').replace(/\\/g, "\\\\"));
+				reg = new RegExp(tmp);
 				// // 符合路经规则--去掉虚拟路径
 				if (reg.test(changePathname)) {
 					changePathname = changePathname.replace(reg, "");
@@ -89,5 +95,5 @@ parseBranch = function(branch, changePathname) {
 			}
 		}
 	}
-}
+};
 module.exports = parsePath;
