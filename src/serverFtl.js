@@ -181,7 +181,7 @@ var  getConsoleErrorString = function(messages) {
 	result = messages.map(function(val, index, com) {
 		var retVal = '', tmp;
 		if (val) {
-			if (!~val.indexOf("freemarker.log.JDK14LoggerFactory$JDK14Logger") === 0) {
+			if (val.indexOf("freemarker.log.JDK14LoggerFactory$JDK14Logger") >= 0) {
 				if (index !== 0) {
 					retVal += "console.groupEnd();";
 				}
