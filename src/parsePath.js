@@ -8,6 +8,7 @@ var path = require('path');
 var fs = require('fs');
 var log = require('../src/log');
 var config = require('../src/config');
+var querystring = require('querystring');
 
 /**
  * 根据配置文件和当前路径解析出一个合理的文件路径，解析成功则返回文件路径
@@ -16,6 +17,7 @@ var config = require('../src/config');
  * @return{String} path，返回一个绝对的文件路径，如果文件找到的话
  */
 var parsePath = function(pathname) {
+	pathname = querystring.unescape(pathname);
 	var pathTree = config.get();
 	// 获取路径
 	pathname = path.normalize(pathname);
