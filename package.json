@@ -1,6 +1,6 @@
 {
   "name": "ftl-node",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "ftl parse to html",
   "main": "app.js",
   "dependencies": {
