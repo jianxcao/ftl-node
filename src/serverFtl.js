@@ -14,14 +14,22 @@ var jarFilePath = path.join(__dirname, "../lib/jar/ftl.jar");
 var spawn = require('child_process').spawn;
 var Promise = require('bluebird');
 var iconv = require('iconv-lite');
+var merge = require('utils-merge');
+var fse = require('fs-extra');
+var consoleErrors = [];
 exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
+	//  重置错误提示
+	consoleErrors = [];
 	var url  = parseurl(req);
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
 	var ext = path.extname(pathname).replace('.', "");
-	var fullPath, headers, pathObject;
+	var fullPath, pathObject;
 	var webPort = port;
+	var tmpFilePaths;
+	//  需要在控制台输出的错误
+	//其内的每个元素是一个 object，object包括  message属性和 stack属性
 	ext = ext.toLowerCase();
 	if (ext && ext == "ftl") {
 		try{
@@ -30,17 +38,30 @@ exports = module.exports = function serveFtl(port) {
 				fullPath = pathObject.fullPath;
 				res.location(pathname);
 				res.set('Full-Path', fullPath);
-				
+				tmpFilePaths = [];
 				// 获取全局的ftl假数据
-				// 暂时没有全局假数据
-				// getFtlData()
-
-
+				getFtlData()
+				// 解析里面所有的include，模拟出假数据
+				.then(function(data) {
+					pathObject.newFullPath = parseInclude(fullPath, tmpFilePaths);
+					var newPath = pathObject.newFullPath.replace(pathObject.basePath, "");
+					pathObject.newPath = newPath;
+					return data;
+				})
 				// 获取res中的一些数据
-				getReq(req, {ENV: "local_dev"}, webPort)
+				.then(function(data) {
+					return getReq(req, data, webPort);
+				})
 				// 调用java解析ftl
 				.then(function(data) {
-					return parseFtl(res, pathObject.basePath, pathObject.path, data, {});
+					return parseFtl(res, pathObject.basePath, pathObject.newPath, data, {}, tmpFilePaths);
+				})
+				//	回收生成的临时文件
+				.then(function(val) {
+					deleteFiles(tmpFilePaths);
+					return val;
+				}, function() {
+					deleteFiles(tmpFilePaths);
 				})
 				.catch(function(err) {
 					if (typeof err == "string") {
@@ -64,32 +85,177 @@ exports = module.exports = function serveFtl(port) {
 };
 
 // 获取ftl数据
-getFtlData = function() {
-	return	new Promise(function(resolve, reject) {
-		// 获取全局的ftl配置数据
-		var ftlDataFileName = "";
-		if (!ftlDataFileName) {
-			log.info('必须配置假数据路径');
-			resolve({});
-		}
-		// 加工配置文件路径
-		ftlDataFileName = path.resolve(__dirname, ftlDataFileName);
-		fs.readFile(ftlDataFileName, {encoding: "UTF-8", flag: "r"}, function(err, data) {
-			if (err) {
-				reject(err);
-			} else {
-				try{
-					data = JSON.parse(jsonCompressor(data));
-					resolve(data);
-				}catch(e) {
-					reject(err);
-				}
-			}
-		});
+var getFtlData = function() {
+	return new Promise(function(resolve, reject) {
+		resolve({ENV: "local_dev"});
 	});
 };
+
+/**解析所给当前文件路径中所有关于并返回数组表示当前页面解析到的地址和类型
+ * <#include "../../inc/core.ftl">
+ * <#import "../dhxy2013/inc/baseModule.ftl" as lottery>
+ * <#mock "../dhxy2013/inc/baseModule.js">
+ * @fullPath String ftl全路径
+ * **/
+var parseInclude = function(fullPath, tmpFilePaths) {
+	if (!tmpFilePaths ) {
+		tmpFilePaths = [];
+	}
+	// 如果创建新的文件并替换则会产生一个新的path
+	var newPath;
+	var pathResult = path.parse(fullPath);
+	var dirname = pathResult.dir;
+	var newFileContent = null;
+	try{
+		var reg = /(<#--\s*){0,1}<#(include|import|mock)\s+(?:"|')([^"'\s]+)(?:"|')(?:\s+as\s+([^\s>]+)){0,1}\s*>(\s*-->){0,1}/g;
+		var one;
+		var command;
+		var currentPath;
+		var currentAbsolutePath;
+		var tmp;
+		var fileContent = fs.readFileSync(fullPath, {
+			encoding: "utf8"
+		});
+		newFileContent = fileContent;
+		while ((one = reg.exec(fileContent)) !== null) {
+			command = one[2];
+			currentPath = one[3];
+			if (command && currentPath) {
+				//import和include指令代表要引入ftl
+				if (command === "import" || command === "include") {
+					//如果 import和include指令是注释的就不解析
+					if (!one[1]) {
+						currentAbsolutePath = path.resolve(dirname, currentPath);
+						var includePath = parseInclude(currentAbsolutePath, tmpFilePaths);
+						//path发生变化，证明引入的ftl中有假数据
+						if (includePath !== currentAbsolutePath) {
+							//用生成的临时文件代替当前文件路径
+							tmp = one[0].replace(currentPath, path.relative(dirname, includePath));
+							tmp = tmp.replace(/\\/g, "/");
+							newFileContent = newFileContent.replace(one[0], tmp);
+						}
+					}
+				// 如果需要mock假数据就生成一个临时的文件，去替换当前的文件
+				} else if (command == "mock") {
+					var data = getOneModuleData(path.resolve(dirname, currentPath));
+					var dataString = parseToFtlData(data);
+					newFileContent = newFileContent.replace(one[0], dataString);
+				}
+			}
+		}
+		//文件内容需要发生变化
+		if (newFileContent !== fileContent) {
+			newPath = path.join(dirname, pathResult.name + "__tmp" + pathResult.ext);
+			tmpFilePaths.push(newPath);
+			createFile(newFileContent, newPath);
+			return newPath;
+		}
+	}catch (err){
+		log.error(err);
+	}
+	return fullPath;
+};
+// 创建文件并返回path
+var createFile = function(content, filePath) {
+	try{
+		fse.outputFileSync(filePath, content);
+	}catch(err) {
+		log.error(err);
+	}
+};
+//删除文件
+var deleteFiles = function(filePaths) {
+	try{
+		if (filePaths && filePaths.length) {
+			filePaths.forEach(function(current) {
+				fse.removeSync(current);
+			});
+		}
+	} catch(err) {
+		log.error(err);
+	}
+};
+// 将data接卸成ftl数据的格式
+var parseToFtlData = function(data) {
+	var html = [];
+	var parseValue =function(k, value) {
+		if (typeof value === 'object') {
+			for (var key in value) {
+				if (value.hasOwnProperty(key)) {
+					if (value[key] instanceof Date) {
+						value[key] =  '__cjxDate1__' + formatTime(+value[key], "yyyy-MM-dd HH:mm:ss:S") +"__cjxDate2__";
+					}
+				}
+			}
+		}
+		return value;
+	};
+	if (data && typeof data === "object") {
+		for(var key in data) {
+			html.push('<#assign ');
+			html.push(key);
+			html.push(' = ');
+			if (data[key] instanceof Date) {
+				html.push(['"', formatTime(+data[key], "yyyy-MM-dd HH:mm:ss:S"), '"', '?datetime("yyyy-MM-dd HH:mm:ss:S")'].join(''));
+			} else {
+				html.push(JSON.stringify(data[key], parseValue).replace(/"(?:__cjxDate1__)([^_]+)(?:__cjxDate2__)"/g, "\"$1\"?datetime(\"yyyy-MM-dd HH:mm:ss:S\")"));
+			}
+			html.push(" />");
+			html.push("\n");
+		}
+	}
+	return html.join('');
+};
+//格式化日期
+var formatTime = function(timeNum, fmt) {
+	timeNum = +timeNum;
+	if (isNaN(timeNum)) {
+		return timeNum;
+	}
+	var dd = new Date(timeNum);
+	var o = {
+		"M+": dd.getMonth() + 1, //月份 
+		"d+": dd.getDate(), //日 
+		"h+|H+": dd.getHours(), //小时 
+		"m+": dd.getMinutes(), //分 
+		"s+": dd.getSeconds(), //秒 
+		"q+": Math.floor((dd.getMonth() + 3) / 3), //季度 
+		"S": dd.getMilliseconds() //毫秒 
+	};
+	if (/(y+)/.test(fmt)) {
+		fmt = fmt.replace(RegExp.$1, (dd.getFullYear() + "").substring(4 - RegExp.$1.length));
+	}
+	for (var k in o) {
+		if (new RegExp("(" + k + ")").test(fmt)) {
+			fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substring(("" + o[k]).length)));
+		}
+	}
+	return fmt;
+};
+//获取引入的假数据
+var getOneModuleData = function(fullPath) {
+	var data = {};
+	try{
+		//如果当前模块存在就删除当前模块的缓存
+		if (require.cache && require.cache[fullPath]) {
+			delete  require.cache[fullPath];
+		}
+		var my = require(fullPath);
+		if (typeof my === 'function') {
+			my = my();
+		}
+		if (typeof my === "object") {
+			data = my;
+		}
+	}catch(err) {
+		log.error(err.message);
+		err.message = "假数据解析出错：    " + err.message;
+		consoleErrors.push(err);
+	}
+	return data;
+};
 // 增加req
-getReq = function(req, data, webPort) {
+var getReq = function(req, data, webPort) {
 	return new Promise(function(resolve, reject) {
 		var headers = req.headers;
 		var myHeaders = {}, k;
@@ -114,69 +280,92 @@ getReq = function(req, data, webPort) {
 	});
 };
 
-// 解析ftl
-parseFtl = function(res, rootPath, path, data, option) {
+/**
+ *
+ * @param res request请求对象
+ * @param rootPath 解析ftl的根路径
+ * @param ftlPath ftl的相对路径
+ * @param data ftl需要的全局假数据
+ * @param option  解析ftl的option
+ * @param tmpFilePaths 生成的临时ftl的所有路径 (主要是如果这个ftl报错了，需要把路径替换成 真正的flt)
+ * @returns {*}
+ */
+var parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 	var cmd;
-		var stdout;
-		var stderr;
-		data = JSON.stringify(data);
-		path = path.replace(/^\\/, "");
-		option = merge({
-			dir: rootPath,
-			path: path
-		}, option);
-		option = JSON.stringify(option);
-		cmd = spawn('java', ["-jar", jarFilePath, option, data]);
-		stdout = cmd.stdout;
-		stderr = cmd.stderr;
-		//stderr.setEncoding('UTF8');
-		new Promise(function(resove, reject) {
-			var rightData = "";
-			stdout.on('data', function(chunk) {
-				rightData += chunk.toString();
-			})
-			.on('end', function() {
-				resove(rightData);
-			});
-			
-		}).then(function(rightData) {
-			return new Promise(function(resolve, reject) {
-				var wrongData = "";
-				stderr.on("data", function(chunk) {
-					wrongData += iconv.decode(chunk, 'GBK');
-				}).on('end', function() {
-					resolve({
-						rightData: rightData,
-						wrongData: wrongData
-					});
-				});
-			});
-		}).then(function(data) {
-			
-			if (data.rightData) {
-				var finalData = data.rightData;
-				var reg = /<\/body>/;
-				var message = data.wrongData.replace(/"/g, "'").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
-				var messages = message.split(/\\r\\n/);
-				var consoleError='<script> if (window.console && console.log && console.group) {'+ getConsoleErrorString(messages) + '}  </script>';
-				if (data.wrongData) {
-					reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData += consoleError);
-				}
-				res.send(finalData);
-			} else {
-				// 没有错误ftl输出为空
-				if (!data.wrongData) {
-					res.send(data.rightData);
-				} else {
-					res.render("500", {
-						message: ['<div>', data.wrongData.replace(/\n/g, "<br>"), '</div>'].join('') || "ftl解析错误"
-					});
+	var stdout;
+	var stderr;
+	data = JSON.stringify(data, function(current, value) {
+		if (typeof value == 'object') {
+			for (var key in value) {
+				if (value.hasOwnProperty(key)) {
+					if (value[key] instanceof Date) {
+						value[key] = "CJX_DATE: " + value[key].getTime();
+					}
 				}
 			}
+		}
+		return value;
+	});
+	ftlPath = ftlPath.replace(/^\\/, "");
+	option = merge({
+		dir: rootPath,
+		path: ftlPath
+	}, option);
+	option = JSON.stringify(option);
+	cmd = spawn('java', ["-jar", jarFilePath, option, data]);
+	stdout = cmd.stdout;
+	stderr = cmd.stderr;
+	return new Promise(function(resove) {
+		var rightData = "";
+		stdout.on('data', function(chunk) {
+			rightData += chunk.toString();
+		})
+		.on('end', function() {
+			resove(rightData);
 		});
+	})
+	.then(function(rightData) {
+		return new Promise(function(resolve) {
+			var wrongData = "";
+			stderr.on("data", function(chunk) {
+				wrongData += iconv.decode(chunk, 'GBK');
+			}).on('end', function() {
+				resolve({
+					rightData: rightData,
+					wrongData: wrongData
+				});
+			});
+		});
+	})
+	.then(function(data) {
+		if (data.rightData) {
+			var finalData = data.rightData;
+			var reg = /<\/body>/;
+			var message = data.wrongData.replace(/"|'|\\/g, "\\$&").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+			tmpFilePaths.forEach(function(val) {
+				val = path.basename(val);
+				var realVal = val.replace(/^(.*)__tmp.ftl$/, "$1.ftl");
+				var reg = new RegExp(val,"g")
+				message = message.replace(reg, realVal);
+			});
+			var messages = message.split(/\\r\\n/);
+			var consoleError='<script> if (window.console && console.log && console.group) {'+ getFtlConsoleErrorString(messages) + getConsoleErrors() + '}  </script>';
+			reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData += consoleError);
+			res.send(finalData);
+		} else {
+			// 没有错误ftl输出为空
+			if (!data.wrongData) {
+				res.send(data.rightData);
+			} else {
+				res.render("500", {
+					message: ['<div>', data.wrongData.replace(/\n/g, "<br>"), '</div>'].join('') || "ftl解析错误"
+				});
+			}
+		}
+	});
 };
 //将ftl错误解析后扔到console。log中去
-var  getConsoleErrorString = function(messages) {
+var getFtlConsoleErrorString = function(messages) {
 	var result;
 	result = messages.map(function(val, index, com) {
 		var retVal = '', tmp;
@@ -190,13 +379,28 @@ var  getConsoleErrorString = function(messages) {
 					val = val.replace('freemarker.log.JDK14LoggerFactory$JDK14Logger error', tmp);
 					messages[index + 1] = '';
 				}
-				retVal += "console.groupCollapsed(\"%c" + val + "\", \"color:red\");";
+				retVal += "console.groupCollapsed(\"%c" + val + "\", \"color:#f51b1b\");";
 			} else {
-				retVal = "console.log(\"%c" + val + "\", \"color:red\");";
+				retVal = "console.log(\"%c" + val + "\", \"color:#f51b1b\");";
 			}
 		}
 		return retVal;
 	});
-	result.push('console.groupEnd()');
+	if (result.length) {
+		result.push('console.groupEnd();');
+	}
 	return result.join("");
+};
+//向控制台输出错误
+var getConsoleErrors = function() {
+	if (consoleErrors && consoleErrors.length) {
+		return	consoleErrors.map(function(current) {
+			if (current.message && current.stack) {
+				return ["console.groupCollapsed('%c", current.message.replace(/"|'|\\/g, "\\$&").replace(/\n/g, "\\n").replace(/\r/g, "\\r"), "', 'color:#f51b1b');",
+					"console.log('%c", current.stack.replace(/"|'|\\/g, "\\$&").replace(/\n/g, "\\n").replace(/\r/g, "\\r"), "', 'color:#f51b1b');",
+					"console.groupEnd();"].join('');
+			}
+		}).join('');
+	}
+	return "";
 };
