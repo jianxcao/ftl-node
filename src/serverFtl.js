@@ -35,6 +35,13 @@ exports = module.exports = function serveFtl(port) {
 		try{
 			pathObject = parsePath(pathname);
 			if (pathObject) {
+				//	回收生成的临时文件
+				req.on('close', function () {
+					deleteFiles(tmpFilePaths);
+				});
+				req.on('end', function () {
+					deleteFiles(tmpFilePaths);
+				});
 				fullPath = pathObject.fullPath;
 				res.location(pathname);
 				res.set('Full-Path', fullPath);
@@ -55,13 +62,6 @@ exports = module.exports = function serveFtl(port) {
 				// 调用java解析ftl
 				.then(function(data) {
 					return parseFtl(res, pathObject.basePath, pathObject.newPath, data, {}, tmpFilePaths);
-				})
-				//	回收生成的临时文件
-				.then(function(val) {
-					deleteFiles(tmpFilePaths);
-					return val;
-				}, function() {
-					deleteFiles(tmpFilePaths);
 				})
 				.catch(function(err) {
 					if (typeof err == "string") {
@@ -145,7 +145,7 @@ var parseInclude = function(fullPath, tmpFilePaths) {
 		}
 		//文件内容需要发生变化
 		if (newFileContent !== fileContent) {
-			newPath = path.join(dirname, pathResult.name + "__tmp" + pathResult.ext);
+			newPath = path.join(dirname, pathResult.name + "__tmp" + new Date().getTime() + pathResult.ext);
 			tmpFilePaths.push(newPath);
 			createFile(newFileContent, newPath);
 			return newPath;
@@ -167,9 +167,12 @@ var createFile = function(content, filePath) {
 var deleteFiles = function(filePaths) {
 	try{
 		if (filePaths && filePaths.length) {
-			filePaths.forEach(function(current) {
-				fse.removeSync(current);
-			});
+			var i = 0;
+			while(filePaths.length) {
+				fse.removeSync(filePaths[0]);
+				i = i+1;
+				filePaths.shift();
+			}
 		}
 	} catch(err) {
 		log.error(err);
@@ -344,8 +347,8 @@ var parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 			var message = data.wrongData.replace(/"|'|\\/g, "\\$&").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
 			tmpFilePaths.forEach(function(val) {
 				val = path.basename(val);
-				var realVal = val.replace(/^(.*)__tmp.ftl$/, "$1.ftl");
-				var reg = new RegExp(val,"g")
+				var realVal = val.replace(/^(.*)__tmp.*.ftl$/, "$1.ftl");
+				var reg = new RegExp(val,"g");
 				message = message.replace(reg, realVal);
 			});
 			var messages = message.split(/\\r\\n/);
