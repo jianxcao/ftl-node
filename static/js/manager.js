@@ -443,7 +443,6 @@
 							};
 							$.get(baseUrl + "/sys/shell_control.html", param)
 							.then(function(data) {
-								console.log(data);
 								if (data == 1) {
 
 								}
@@ -586,7 +585,7 @@
 				if (tmp && tmp.branch) {
 					$.extend(tmp.branch, data);
 				}
-			})
+			});
 			return this;
 		},
 		// 找到一个分组
@@ -666,8 +665,8 @@
 			$(document).on('keydown', function(e) {
 				if (e.ctrlKey && +e.keyCode === 83) {
 					save.trigger('click');
+					return false;
 				}
-				return false;
 			});
 			return this;
 		},
@@ -694,7 +693,7 @@
 			if (closeTime) {
 				window.setTimeout(function() {
 					ele.alert("close");
-				}, closeTime)
+				}, closeTime);
 			}
 		}
 	};
