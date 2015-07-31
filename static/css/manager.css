@@ -109,3 +109,13 @@ header{
 #create-branch .group-name-wrap{
 	width: 100%;
 }
+
+/*提示样式*/
+.tip{
+	position: fixed;
+	top: 10%;
+	left: 50%;
+	width: 60%;
+	margin-left: -30%;
+	text-align: center;
+}
