@@ -99,7 +99,6 @@
 						}
 					}
 					return false;
-					// 禁用
 					// 禁止用
 				}).delegate('.dis-icon', 'click', function(e) {
 					var me = $(this),
@@ -176,6 +175,10 @@
 						me.addClass('active');
 						manager.initProjectPanel(groupName, branchName);
 					}
+				})
+				.delegate('dd[data-fun]', 'dblclick', function(e) {
+					$('.disabled-all').trigger('click');
+					$(this).find('.dis-icon').trigger('click');
 				});
 			return this;
 		},
