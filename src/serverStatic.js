@@ -24,7 +24,7 @@ exports = module.exports = function serveStatic() {
 	var ext = path.extname(pathname).replace('.', "");
 	var absPath, headers, pathObject;
 	ext = ext.toLowerCase();
-	if (ext && !~excludeFileExt.indexOf(ext)) {
+	if (!~excludeFileExt.indexOf(ext)) {
 		try{
 			pathObject = parsePath(pathname);
 			if (pathObject && pathObject.fullPath) {
