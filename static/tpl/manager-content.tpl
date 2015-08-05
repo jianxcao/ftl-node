@@ -1,5 +1,9 @@
 <div class="form-horizontal form-wrap" data-branch-name="<%=data.branchName%>" data-group-name="<%=data.groupName%>">
-	<div class="form-group"><button type="button" class="btn btn-default pull-right create-path">新建路径</button></div>
+	<div class="form-group">
+		<div class="btn-group pull-right branch-btn-wrap">
+			<button type="button" class="btn btn-default create-path">新建路径</button>
+		</div>
+	</div>
 	<div class="form-group">
 		<label class="col-md-1 control-label">项目根路径</label>
 		<div class="col-md-8">

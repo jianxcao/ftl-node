@@ -118,4 +118,5 @@ header{
 	width: 60%;
 	margin-left: -30%;
 	text-align: center;
+	z-index: 999;
 }

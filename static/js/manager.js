@@ -4,6 +4,7 @@
 		getGuid.__id = getGuid.__id + 1;
 		return getGuid.__id;
 	};
+	var baseUrl = window.baseUrl;
 	var manager = {
 		cache: {
 			// 所有的路径存放
@@ -441,14 +442,28 @@
 						})
 						.on('click', ".start-shell, .stop-shell", function(e) {
 							var me = $(this);
+							var pp = me.parents('.form-wrap');
 							var param = {
 								type: me.hasClass('start-shell') ? 1 : 0,
+								groupName: pp.attr("data-group-name"),
+								branchName: pp.attr("data-branch-name")
 							};
-							$.get(baseUrl + "/sys/shell_control.html", param)
+							$.post(baseUrl + "/sys/shell_control.html", param)
 							.then(function(data) {
-								if (data == 1) {
-
+								try{
+									data = typeof data === "object" ? data : JSON.parseJSON(data);
+									data.status = +data.status || 0;
+									if (data.status === 1) {
+										manager.toast(data.message);
+									} else {
+										manager.wrongToast(data.message);
+									}
+								} catch(err){
+									manager.wrongToast();
 								}
+							})
+							.fail(function() {
+								manager.wrongToast();
 							});
 							return false;
 						})
@@ -512,44 +527,56 @@
 				current.show();
 			} else {
 				manager.getTplByPath("/tpl/manager-content.tpl")
-					.then(function(tpl) {
-						allFormWrap.hide();
-						var data, html, tmp;
-						tmp = manager.findBranch(groupName, branchName);
-						data = $.extend({
-							groupName: groupName,
-							branchName: branchName
-						}, tmp ? tmp.branch : null);
-						html = $.template(tpl, data);
-						manager.cache.panelEle.append(html);
-						current = panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
-						new Sortable(current.find('.drag-wrap')[0], {
-							animation: 150,
-							ghostClass: "sortable-ghost",
-							scroll: false,
-							handle: ".move-icon",
-							draggable: ".form-drag",
-							onEnd: function(evt) {
-								var oldIndex = evt.oldIndex,
-									val, tmp, ex,
-									newIndex = evt.newIndex;
-								// 找到父元素
-								var ele = $(this.el).closest('.form-wrap'),
-									branchName = ele.attr('data-branch-name'),
-									groupName = ele.attr('data-group-name');
-								tmp = manager.findBranch(groupName, branchName);
-								if (typeof oldIndex == "number" && typeof newIndex === "number" &&
-									tmp && tmp.branch && tmp.branch.val) {
-									val = tmp.branch.val;
-									if (val[newIndex] && val[oldIndex]) {
-										ex = val.splice(oldIndex, 1);
-										ex.unshift(newIndex, 0);
-										Array.prototype.splice.apply(val, ex);
-									}
+				.then(function(tpl) {
+					allFormWrap.hide();
+					var data, html, tmp;
+					tmp = manager.findBranch(groupName, branchName);
+					data = $.extend({
+						groupName: groupName,
+						branchName: branchName
+					}, tmp ? tmp.branch : null);
+					html = $.template(tpl, data);
+					manager.cache.panelEle.append(html);
+					current = panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
+					new Sortable(current.find('.drag-wrap')[0], {
+						animation: 150,
+						ghostClass: "sortable-ghost",
+						scroll: false,
+						handle: ".move-icon",
+						draggable: ".form-drag",
+						onEnd: function(evt) {
+							var oldIndex = evt.oldIndex,
+								val, tmp, ex,
+								newIndex = evt.newIndex;
+							// 找到父元素
+							var ele = $(this.el).closest('.form-wrap'),
+								branchName = ele.attr('data-branch-name'),
+								groupName = ele.attr('data-group-name');
+							tmp = manager.findBranch(groupName, branchName);
+							if (typeof oldIndex == "number" && typeof newIndex === "number" &&
+								tmp && tmp.branch && tmp.branch.val) {
+								val = tmp.branch.val;
+								if (val[newIndex] && val[oldIndex]) {
+									ex = val.splice(oldIndex, 1);
+									ex.unshift(newIndex, 0);
+									Array.prototype.splice.apply(val, ex);
 								}
 							}
-						});
+						}
 					});
+				})
+				.then(function() {
+					// 检测项目根目录是否配置run.config.js并且该js 被node require后没有任何问题
+					return manager.checkCommand(groupName, branchName);
+				})
+				.then(function(status) {
+					var html  = ['<button type="button" class="btn btn-default start-shell">start</button>',
+						'<button type="button" class="btn btn-default stop-shell">stop</button>'].join('');
+					console.log(status);
+					if (status) {
+						current.find('.branch-btn-wrap').prepend(html);
+					}
+				});
 			}
 			return this;
 		},
@@ -648,6 +675,23 @@
 					});
 			}
 		},
+		// 检测是否有这个命令
+		checkCommand: function(groupName, branchName) {
+			var d = $.Deferred();
+			$.post(baseUrl + "/sys/is_have_shell_control.html", {
+				groupName: groupName,
+				branchName: branchName
+			})
+			.always(function(txt) {
+				console.log(txt);
+				if (txt === "1" || txt === "0") {
+					d.resolve(txt === "1" ? true : false);
+				} else {
+					manager.wrongToast();
+				}
+			});
+			return d;
+		},
 		// 保存
 		initSave: function() {
 			var save = $('.save').click(function(e) {
@@ -659,10 +703,10 @@
 					if (data == 1) {
 						manager.alertTip("服务器配置更新成功", 500);
 					} else {
-						manager.alertTip(0, "服务器配置失败", 500);
+						manager.wrongToast("服务器配置失败");
 					}
 				}, function() {
-					manager.alertTip(0, "系统忙，请稍后在试试", 600);
+					manager.wrongToast("系统忙，请稍后在试试");
 				});
 			});
 			$(document).on('keydown', function(e) {
@@ -698,6 +742,16 @@
 					ele.alert("close");
 				}, closeTime);
 			}
+		},
+		toast: function(type, msg) {
+			if (typeof type === "string") {
+				msg = type;
+				type  = 1;
+			}			
+			this.alertTip(type, msg, 500);
+		},
+		wrongToast: function(msg) {
+			this.toast(0, msg || "系统忙，请稍后在试试");
 		}
 	};
 	manager.init();

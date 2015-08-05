@@ -3,6 +3,9 @@ var express = require('express'),
 	log = require('../src/log'),
 	path = require('path'),
 	bodyParser = require('body-parser'),
+	MyCommand = require('../src/execCommand'),
+	getProjectConfig = require('../src/getProjectConfig'),
+	commandObj = {};
 	config = require('../src/config');
 var isEmptyObject = function(obj) {
 	for (var name in obj) {
@@ -25,7 +28,113 @@ app.all(["/sys/get_config_ajax.html", "/sys/get_config_ajax"], function(req, res
 	// 从配置中获取配置
 	res.json(config.get() || {});
 });
-app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], function(req, res, next) {
+
+app.post(['/sys/shell_control.html', '/sys/shell_control'], function(req, res, next) {
+	var result = {status: 0};
+	var data;
+	var currentCommandObj;
+	try{
+		if (req.body) {
+			data = req.body;
+			data.type = +data.type;
+			var branchName = data.branchName;
+			var groupName = data.groupName;
+			var key;
+			var commandConfig;
+			if (typeof data.type === "number" && branchName && groupName) {
+				branchName = branchName.trim();
+				groupName = groupName.trim();
+				key = groupName + "_" + branchName;
+				//发送命令
+				currentCommandObj = commandObj[key];
+				if (data.type === 1) {
+					// 没有命令就创建命令
+					if (!currentCommandObj) {
+						commandConfig = getProjectConfig(groupName, branchName);
+						if (!commandConfig) {
+							result.message = "没有找到对应的配置文件，请确认根目录下有run.config.js文件，并且配置了跟路径";
+						} else {
+							if (!commandConfig.start || !commandConfig.rootPath) {
+								result.message = "请在run.config.js配置文件中输出start配置命令";
+							} else {
+								//"node app.js -p 8080"
+								currentCommandObj = new MyCommand(commandConfig.start, {
+									cwd: path.normalize(commandConfig.rootPath)
+								});
+								commandObj[key] = currentCommandObj;
+							}
+						}
+					}
+					if (currentCommandObj.runing) {
+						result.message = "当前命令已经在运行状态";
+					} else {
+						currentCommandObj.exec(function(status) {
+							if (status) {
+								result.message = "成功运行当前命令";
+								result.status = 1;
+							} else {
+								result.message = "运行命令出错";
+							}
+							res.json(result);
+						});
+					}
+				//结束正在运行的命令
+				} else {
+					currentCommandObj = commandObj[key];
+					if (currentCommandObj) {
+						if (currentCommandObj.runing) {
+							currentCommandObj.exit(function(status) {
+								if (status) {
+									result.message = "成功停止当前命令";
+									result.status = 1;
+								} else {
+									result.message = "终止命令出错";
+								}
+								res.json(result);
+							});
+						} else {
+							result.message = "当前没有正在运行的命令";
+						}
+					} else {
+						result.message = "当前没有正在运行的命令";
+					}
+				}
+			} else {
+				result.message = "参数错误";
+			}
+		}
+	}catch(e) {
+		log.error(e);
+		result.message = e.message;
+	}
+	// 出错统一返回
+	if (result.status === 0 && result.message) {
+		res.json(result);
+	}
+});
+app.all(['/sys/is_have_shell_control.html', '/sys/is_have_shell_control'], function(req, res, next) {
+	var status = "0";
+	try{
+		if (req.body) {
+			data = req.body;
+			var branchName = data.branchName;
+			var groupName = data.groupName;
+			if (branchName && groupName) {
+				branchName = branchName.trim();
+				groupName = groupName.trim();
+				commandConfig = getProjectConfig(groupName, branchName);
+				if (commandConfig && commandConfig.start && commandConfig.rootPath) {
+					status = "1";
+				}
+			}
+		}
+	}catch(e) {
+		log.error(e);
+	}
+	res.send(status);
+});
+
+app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], function(req, res) {
 	var data, keys = ["port", "host", "autoResponder"], setData = {}, status = false;
 	try{
 		if (req.body && req.body.data) {
@@ -50,7 +159,7 @@ app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], function(req, re
 			}
 		}
 	}catch(e) {
-		log.error(e.message);
+		log.error(e);
 	}
 	res.send("0");
 });
