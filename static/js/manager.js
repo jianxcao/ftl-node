@@ -572,7 +572,6 @@
 				.then(function(status) {
 					var html  = ['<button type="button" class="btn btn-default start-shell">start</button>',
 						'<button type="button" class="btn btn-default stop-shell">stop</button>'].join('');
-					console.log(status);
 					if (status) {
 						current.find('.branch-btn-wrap').prepend(html);
 					}
@@ -683,7 +682,6 @@
 				branchName: branchName
 			})
 			.always(function(txt) {
-				console.log(txt);
 				if (txt === "1" || txt === "0") {
 					d.resolve(txt === "1" ? true : false);
 				} else {

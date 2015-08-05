@@ -17,18 +17,22 @@ var log = require('../src/log');
 
 module.exports = find = function(groupName, branchName) {
 	var rootPath = getRootPath(groupName, branchName);
+	var config;
 	// 成功获取了跟路径
 	if (rootPath) {
 		var fullPath = path.join(rootPath, "run.config.js");
 		// 找到这个模块了，直接返回
 		if (require.cache && require.cache[fullPath]) {
-			return require.cache[fullPath];
+			config = require(fullPath);
+			config.rootPath =  rootPath;
+			config.fullPath = fullPath;
+			return config;
 		} else {
 			// 如果找到了这个文件
 			if (fs.existsSync(fullPath)) {
 				try{
 					// 以模块形式引入这个文件
-					var config = require(fullPath);
+					config = require(fullPath);
 					if (config) {
 						config.rootPath =  rootPath;
 						config.fullPath = fullPath;

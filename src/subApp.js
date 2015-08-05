@@ -65,18 +65,20 @@ app.post(['/sys/shell_control.html', '/sys/shell_control'], function(req, res, n
 							}
 						}
 					}
-					if (currentCommandObj.runing) {
-						result.message = "当前命令已经在运行状态";
-					} else {
-						currentCommandObj.exec(function(status) {
-							if (status) {
-								result.message = "成功运行当前命令";
-								result.status = 1;
-							} else {
-								result.message = "运行命令出错";
-							}
-							res.json(result);
-						});
+					if (currentCommandObj) {
+						if (currentCommandObj.runing) {
+							result.message = "当前命令已经在运行状态";
+						} else {
+							currentCommandObj.exec(function(status) {
+								if (status) {
+									result.message = "成功运行当前命令";
+									result.status = 1;
+								} else {
+									result.message = "运行命令出错";
+								}
+								res.json(result);
+							});
+						}
 					}
 				//结束正在运行的命令
 				} else {
