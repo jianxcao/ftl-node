@@ -596,8 +596,6 @@
 					}
 				});
 				tmp = manager.findBranch(groupName, branchName);
-				// 检测当前分支的btn是否更新
-				manager.setCommandBtn(groupName, branchName);
 				if (tmp && tmp.branch) {
 					$.extend(tmp.branch, data);
 				}
@@ -752,6 +750,7 @@
 		 *  不传递 type则执行启动和停止命令
 		 */
 		saveCheckCommand: function(type) {
+			///////////////////////////////////////////////////////////////////////保存时候如果跟路径发生变换也需要处理/////////////////////////////////////////
 			var myCache = {}, keys;
 			var host = manager.cache.setData.host || [];
 			var oldHost = JSON.parse(manager.cache.strSetData).host || [];
@@ -814,24 +813,28 @@
 					});
 				}
 			});
+			console.log(myCache);
 			for(var key in myCache) {
 				if (type === 1 || type === undefined) {
-					keys = key.split("_");
-					manager.sendCommand({
-						type: 1,
-						branchName: keys[1],
-						groupName: keys[0]
-					}, false)
-					.then(function(result) {
-						var status = result.status;
-						// 挑选一些状态提示，其他状态不提示
-						if (status === 1 || status === 2) {
-							manager.toast(result.message);
-						}
-						if (status === 21 || status === 11 || status === 14) {
-							manager.wrongToast(result.message);
-						}
-					});
+					// 这里只能是开始运行命令
+					if (!myCache[key]) {
+						keys = key.split("_");
+						manager.sendCommand({
+							type: 1,
+							branchName: keys[1],
+							groupName: keys[0]
+						}, false)
+						.then(function(result) {
+							var status = result.status;
+							// 挑选一些状态提示，其他状态不提示
+							if (status === 1 || status === 2) {
+								manager.toast(result.message);
+							}
+							if (status === 21 || status === 11 || status === 14) {
+								manager.wrongToast(result.message);
+							}
+						});
+					}
 				}
 			}
 		},
@@ -842,7 +845,6 @@
 				manager.setPanelData();
 				var strData = JSON.stringify(manager.cache.setData);
 				var oldstrData = manager.cache.strSetData;
-				manager.saveCheckCommand();
 				// 如果数据完全一样，就证明根本没有改配置
 				if (strData === oldstrData) {
 					return;
@@ -852,6 +854,18 @@
 				}).then(function(status) {
 					status = +status;
 					if (status === 1) {
+						manager.cache.panelEle
+						.find('.form-wrap[data-branch-name][data-group-name]')
+						.each(function() {
+							var me = $(this),
+								groupName = me.attr('data-group-name'),
+								branchName = me.attr('data-branch-name');
+							if (groupName && branchName) {
+								// 检测当前分支的btn是否更新
+								manager.setCommandBtn(groupName, branchName);
+							}
+						});
+						manager.saveCheckCommand();
 						// 更新缓存数据
 						manager.cache.strSetData = strData;
 						manager.alertTip("服务器配置更新成功", 500);
