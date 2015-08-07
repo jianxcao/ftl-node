@@ -22,6 +22,8 @@ exports = module.exports = function serveFtl(port) {
 	//  重置错误提示
 	consoleErrors = [];
 	var url  = parseurl(req);
+	var port = req.app.get("port");
+	var fullUrl = req.protocol + '://' + req.get('host') + ( port == 80 || port == 443 ? '' : ':'+ port ) + req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
 	var ext = path.extname(pathname).replace('.', "");
@@ -33,7 +35,7 @@ exports = module.exports = function serveFtl(port) {
 	ext = ext.toLowerCase();
 	if (ext && ext == "ftl") {
 		try{
-			pathObject = parsePath(pathname);
+			pathObject = parsePath(fullUrl);
 			if (pathObject) {
 				//	回收生成的临时文件
 				req.on('close', function () {

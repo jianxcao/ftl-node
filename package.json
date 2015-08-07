@@ -1,6 +1,6 @@
 {
   "name": "ftl-node",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "ftl parse to html",
   "main": "app.js",
   "dependencies": {
@@ -39,5 +39,8 @@
   },
   "author": "jxcao",
   "license": "MIT",
+  "engines": {
+    "node": ">=0.12"
+  },
   "devDependencies": {}
 }

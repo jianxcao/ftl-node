@@ -111,7 +111,7 @@ header{
 }
 
 /*提示样式*/
-.tip{
+.tipArea{
 	position: fixed;
 	top: 10%;
 	left: 50%;

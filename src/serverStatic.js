@@ -16,9 +16,11 @@ exports = module.exports = function serveStatic() {
   return function serveStatic(req, res, next) {
 	// 如果不是get请求或者 是head， 就直接到下一个请求
 	if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== "POST") {
-	  return next()
+	  return next();
 	}
 	var url  = parseurl(req);
+	var port = req.app.get("port");
+	var fullUrl = req.protocol + '://' + req.get('host') + ( port == 80 || port == 443 ? '' : ':'+ port ) + req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
 	var ext = path.extname(pathname).replace('.', "");
@@ -26,11 +28,11 @@ exports = module.exports = function serveStatic() {
 	ext = ext.toLowerCase();
 	if (!~excludeFileExt.indexOf(ext)) {
 		try{
-			pathObject = parsePath(pathname);
+			pathObject = parsePath(fullUrl);
 			if (pathObject && pathObject.fullPath) {
 				absPath = pathObject.fullPath;
 				res.location(pathname);
-				headers = {"Full-Path": absPath}
+				headers = {"Full-Path": absPath};
 				// 字体文件
 				if (~fontsFileExt.indexOf(ext)) {
 					headers['Access-Control-Allow-Origin'] = "*";
@@ -51,5 +53,5 @@ exports = module.exports = function serveStatic() {
 	} else {
 		next();
 	}
-  }
-}
+  };
+};

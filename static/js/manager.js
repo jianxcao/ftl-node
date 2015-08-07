@@ -9,6 +9,8 @@
 		cache: {
 			// 所有的路径存放
 			setData: {},
+			// 所有路径的备份，当配置发生变化，但是还没同步到服务器的时候，这个字符串和setData不同
+			strSetData: "",
 			sortObj: {}
 		},
 		init: function() {
@@ -27,6 +29,10 @@
 					manager.cache.setData = {};
 				})
 				.always(function() {
+					// 缓存数据为空，一开始的时候
+					manager.cache.strSetData = JSON.stringify({});
+					manager.saveCheckCommand(1);
+					manager.cache.strSetData = JSON.stringify(manager.cache.setData);
 					manager.cache.panelEle = $('.content-col');
 					manager.cache.sidebarEle = $('.sidebar');
 				})
@@ -180,6 +186,7 @@
 				.delegate('dd[data-fun]', 'dblclick', function(e) {
 					$('.disabled-all').trigger('click');
 					$(this).find('.dis-icon').trigger('click');
+					$('.save:eq(0)').triggerHandler("click");
 				});
 			return this;
 		},
@@ -444,27 +451,11 @@
 							var me = $(this);
 							var pp = me.parents('.form-wrap');
 							var param = {
-								type: me.hasClass('start-shell') ? 1 : 0,
+								type: me.hasClass('start-shell') ? 1 : 2,
 								groupName: pp.attr("data-group-name"),
 								branchName: pp.attr("data-branch-name")
 							};
-							$.post(baseUrl + "/sys/shell_control.html", param)
-							.then(function(data) {
-								try{
-									data = typeof data === "object" ? data : JSON.parseJSON(data);
-									data.status = +data.status || 0;
-									if (data.status === 1) {
-										manager.toast(data.message);
-									} else {
-										manager.wrongToast(data.message);
-									}
-								} catch(err){
-									manager.wrongToast();
-								}
-							})
-							.fail(function() {
-								manager.wrongToast();
-							});
+							manager.sendCommand(param);
 							return false;
 						})
 						.on('click', ".del-icon", function() {
@@ -567,14 +558,8 @@
 				})
 				.then(function() {
 					// 检测项目根目录是否配置run.config.js并且该js 被node require后没有任何问题
-					return manager.checkCommand(groupName, branchName);
-				})
-				.then(function(status) {
-					var html  = ['<button type="button" class="btn btn-default start-shell">start</button>',
-						'<button type="button" class="btn btn-default stop-shell">stop</button>'].join('');
-					if (status) {
-						current.find('.branch-btn-wrap').prepend(html);
-					}
+					//则置入 start 和 stop按钮
+					return manager.setCommandBtn(groupName, branchName);
 				});
 			}
 			return this;
@@ -611,6 +596,8 @@
 					}
 				});
 				tmp = manager.findBranch(groupName, branchName);
+				// 检测当前分支的btn是否更新
+				manager.setCommandBtn(groupName, branchName);
 				if (tmp && tmp.branch) {
 					$.extend(tmp.branch, data);
 				}
@@ -674,7 +661,73 @@
 					});
 			}
 		},
-		// 检测是否有这个命令
+		// 发送执行run.config.js中的命令
+		/**
+		 *
+		 * @param param ajax参数
+		 * {
+		 *   type: 1|2 1表示运行命令，2表示停止命令
+		 *   branchName 分支名称
+		 *   groupName 分组名称
+		 * }
+		 * @pram isTip true 则提示否则 不给提示，仅仅调用
+		 * @returns promise
+		 */
+		/*stats解析 0表示系统错误
+		  *1开头表示 启动命令的结果
+		  * 11: 运行命令出错
+		  * 12: 命令已经在运行中
+		  * 13: 没有配置文件
+		  * 14: 配置文件解析出错
+		  *2开头表示 结束命令的结果
+		  * 21 停止命令出错
+		  * 22 表示当前么有这个命令
+		**/
+		sendCommand: function(param, isTip) {
+			if (isTip === undefined) {
+				isTip = true;
+			}
+			return $.post(baseUrl + "/sys/shell_control.html", param)
+				.then(function(data) {
+					try {
+						data = typeof data === "object" ? data : JSON.parseJSON(data);
+						data.status = +data.status || 0;
+						if (data.status === 1 || data.status === 2) {
+							isTip && manager.toast(data.message);
+						} else {
+							isTip && manager.wrongToast(data.message);
+						}
+					} catch (err) {
+						isTip && manager.wrongToast();
+					}
+					return data;
+				})
+				.fail(function() {
+					manager.wrongToast();
+				});
+		},
+		// 设置 每个项目上的启动和停止按钮的显示
+		setCommandBtn: function(groupName, branchName) {
+			return manager.checkCommand(groupName, branchName)
+				.then(function(status) {
+					// 找到当前面板
+					var current = manager.cache.panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
+					var btnWrap;
+					var html = ['<button type="button" class="btn btn-default start-shell">start</button>',
+						'<button type="button" class="btn btn-default stop-shell">stop</button>'
+					].join('');
+					// 如果当前支持命令,并且当前面板已经被创建了
+					if (status && current.length) {
+						// 如果当前没有置入2个按钮
+						// 调用命令置入按钮
+						btnWrap = current.find('.branch-btn-wrap');
+						if (!btnWrap.find('.start-shell').length) {
+							btnWrap.prepend(html);
+						}
+					}
+				});
+		},
+		// 检测是否有run.config.js中的start这个命令
 		checkCommand: function(groupName, branchName) {
 			var d = $.Deferred();
 			$.post(baseUrl + "/sys/is_have_shell_control.html", {
@@ -690,15 +743,117 @@
 			});
 			return d;
 		},
+		/**
+		 * 在点击应用的时候检测所有分支的 状态哪个的状态发生了变话，就去调用 
+		 * 启动或停止这个分支下的run.config.js的命令，如果命令已经被调用，则掉了没有反映，
+		 * 如果命令已经停止，调用停止也没有用，如果没有命令（即没有run.config.js），则调用不生效
+		 * run.config.js应该配置在项目的根目录，并且配置的时候请配置项目的根目录
+		 *@param type 如果type为1就强制 只执行 启动命令，如果type为2则强制只执行停止命令 
+		 *  不传递 type则执行启动和停止命令
+		 */
+		saveCheckCommand: function(type) {
+			var myCache = {}, keys;
+			var host = manager.cache.setData.host || [];
+			var oldHost = JSON.parse(manager.cache.strSetData).host || [];
+			host.forEach(function(group) {
+				if (group.branches && group.branches.length) {
+					group.branches.forEach(function(branch) {
+						myCache[group.groupName + "_" + branch.branchName] = group.disabled ? true : (branch.disabled ? true : false);
+					});
+				}
+			});
+			oldHost.forEach(function(group) {
+				if (group.branches && group.branches.length) {
+					group.branches.forEach(function(branch) {
+						var status = group.disabled ? true : (branch.disabled ? true : false);
+						var key = group.groupName + "_" + branch.branchName;
+						var commandConfig;
+						if (myCache[key] !== undefined) {
+							// 状态发送变换
+							if (myCache[key] !== status) {
+								commandConfig = {
+									type: myCache[key] ? 2 : 1,
+									branchName: branch.branchName,
+									groupName: group.groupName
+								};
+							}
+						} else {
+							commandConfig = {
+								type: 2,
+								branchName: branch.branchName,
+								groupName: group.groupName
+							};
+						}
+						if (commandConfig) {
+							// 只发送启动命令
+							if (type === 1) {
+								if (commandConfig.type !== 1) {
+									commandConfig = null;
+								}
+							// 只发送停止命令
+							} else if (type === 2) {
+								if (commandConfig.type !== 2) {
+									commandConfig = null;
+								}
+							}
+							if (commandConfig) {
+								manager.sendCommand(commandConfig, false)
+								.then(function(result) {
+									var status = result.status;
+									// 挑选一些状态提示，其他状态不提示
+									if (status === 1 || status === 2) {
+										manager.toast(result.message);
+									}
+									if (status === 21 || status === 11 || status === 14) {
+										manager.wrongToast(result.message);
+									}
+								});
+							}
+						}
+						delete myCache[key];
+					});
+				}
+			});
+			for(var key in myCache) {
+				if (type === 1 || type === undefined) {
+					keys = key.split("_");
+					manager.sendCommand({
+						type: 1,
+						branchName: keys[1],
+						groupName: keys[0]
+					}, false)
+					.then(function(result) {
+						var status = result.status;
+						// 挑选一些状态提示，其他状态不提示
+						if (status === 1 || status === 2) {
+							manager.toast(result.message);
+						}
+						if (status === 21 || status === 11 || status === 14) {
+							manager.wrongToast(result.message);
+						}
+					});
+				}
+			}
+		},
 		// 保存
 		initSave: function() {
 			var save = $('.save').click(function(e) {
 				//先将当前面版中的数据更新到setData中去
 				manager.setPanelData();
+				var strData = JSON.stringify(manager.cache.setData);
+				var oldstrData = manager.cache.strSetData;
+				manager.saveCheckCommand();
+				// 如果数据完全一样，就证明根本没有改配置
+				if (strData === oldstrData) {
+					return;
+				}
 				$.post(baseUrl + '/sys/set_config_ajax.html', {
-					data: JSON.stringify(manager.cache.setData)
-				}).then(function(data) {
-					if (data == 1) {
+					data: strData
+				}).then(function(status) {
+					status = +status;
+					if (status === 1) {
+						// 更新缓存数据
+						manager.cache.strSetData = strData;
 						manager.alertTip("服务器配置更新成功", 500);
 					} else {
 						manager.wrongToast("服务器配置失败");
@@ -709,7 +864,7 @@
 			});
 			$(document).on('keydown', function(e) {
 				if (e.ctrlKey && +e.keyCode === 83) {
-					save.trigger('click');
+					save.triggerHandler('click');
 					return false;
 				}
 			});
@@ -734,7 +889,7 @@
 				type: type == 1 ? "success" : "warning",
 				msg: msg
 			});
-			ele = $(html).appendTo($('body')).alert();
+			ele = $(html).appendTo($('.tipArea')).alert();
 			if (closeTime) {
 				window.setTimeout(function() {
 					ele.alert("close");
@@ -746,7 +901,7 @@
 				msg = type;
 				type  = 1;
 			}			
-			this.alertTip(type, msg, 500);
+			this.alertTip(type, msg, 5000);
 		},
 		wrongToast: function(msg) {
 			this.toast(0, msg || "系统忙，请稍后在试试");

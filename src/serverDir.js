@@ -10,9 +10,11 @@ exports = module.exports = function serveStatic() {
   return function serveStatic(req, res, next) {
 	// 如果不是get请求或者 是head， 就直接到下一个请求
 	if (req.method !== 'GET' && req.method !== 'HEAD') {
-	  return next()
+	  return next();
 	}
 	var url  = parseurl(req);
+	var port = req.app.get("port");
+	var fullUrl = req.protocol + '://' + req.get("host") + ( port == 80 || port == 443 ? '' : ':'+ port ) + req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
 	var ext = path.extname(pathname).replace('.', "");
@@ -21,7 +23,7 @@ exports = module.exports = function serveStatic() {
 	// 没有ext证明是个路径，而不是个文件
 	if (!ext) {
 		try{
-			pathObject = parsePath(pathname);
+			pathObject = parsePath(fullUrl);
 			if (pathObject && pathObject.fullPath) {
 				absPath = pathObject.fullPath;
 				// log.debug(absPath, 'absPath');
@@ -34,7 +36,7 @@ exports = module.exports = function serveStatic() {
 							if (status.isDirectory()) {
 								resolve();
 							} else {
-								reject("当前文件类型不是一个目录")
+								reject("当前文件类型不是一个目录");
 							}
 						}
 					});
@@ -52,19 +54,19 @@ exports = module.exports = function serveStatic() {
 					});
 				// 第三部根据文件名循环遍历得到文件信息
 				}).then(function(files) {
-					return getFileInfo(files, absPath)
+					return getFileInfo(files, absPath);
 				// 第四部渲染页面
 				}).then(function(filesInfo){
 					res.set('Full-Path', absPath);
 					res.render("list", {
 						url: req.url,
 						data: filesInfo
-					})
+					});
 				}).catch(function(e){// 出错，直接抛出到页面
 					if (typeof (e) == "string") {
 						e = new Error(e);
 					}
-					log.debug('进入catch错误区域')
+					log.error(e);
 					next(e);
 				});
 			} else {
@@ -79,8 +81,8 @@ exports = module.exports = function serveStatic() {
 	} else {
 		next();
 	}
-  }
-}
+  };
+};
 
 
 /*
@@ -114,6 +116,6 @@ var getFileInfo = function(files, basePath) {
 				});
 			}).then(get);
 		}
-	}
+	};
 	return get([]);
 };

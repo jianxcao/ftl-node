@@ -15,7 +15,7 @@ var express = require('express'),
 	innerPath = '/___mySystemInner',
 	child_process = require('child_process');
 innerPath = innerPath.replace(/^\/|\/$/, "");
-innerPath = "/" + innerPath
+innerPath = "/" + innerPath;
 
 
 // 初始化配置
@@ -42,6 +42,7 @@ app.disable('x-powered-by');
 app.engine('.ejs', require('ejs').__express);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
+
 // 引用子app，内部使用该app
 app.use(innerPath, subApp);
 
@@ -51,7 +52,7 @@ app.use(serverDir());
 app.use(serverStatic());
 // // 运用ftl编译模块，即将ftl编译成html
 app.use(serverFtl(port));
-
+app.set("port", port);
 app.use(function(err, req, res, next) {
 	log.error('发生错误了,', err.message);
 	res.status(500);
