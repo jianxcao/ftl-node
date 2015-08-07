@@ -96,7 +96,9 @@ var parseBranch = function(branch, url, groupName) {
 				return {
 					fullPath: p,
 					basePath: codePath,
-					path: changePathname
+					path: changePathname,
+					groupName: groupName,
+					branchName: branchName
 				};
 			}
 		}

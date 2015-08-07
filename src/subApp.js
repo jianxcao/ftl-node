@@ -75,7 +75,7 @@ app.post(['/sys/shell_control.html', '/sys/shell_control'], function(req, res, n
 									//"node app.js -p 8080"
 									currentCommandObj = new MyCommand(commandConfig.start, {
 										cwd: path.normalize(commandConfig.rootPath)
-									});
+									}, groupName, branchName);
 									commandObj[key] = currentCommandObj;
 								}
 							}

@@ -8,7 +8,6 @@ var parseurl = require('parseurl');
 var path = require('path');
 var log = require('../src/log');
 var fs = require('fs');
-var jsonCompressor = require('json-compressor');
 var parsePath = require('../src/parsePath');
 var jarFilePath = path.join(__dirname, "../lib/jar/ftl.jar");
 var spawn = require('child_process').spawn;

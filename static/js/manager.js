@@ -813,7 +813,6 @@
 					});
 				}
 			});
-			console.log(myCache);
 			for(var key in myCache) {
 				if (type === 1 || type === undefined) {
 					// 这里只能是开始运行命令

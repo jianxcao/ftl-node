@@ -1,22 +1,29 @@
 #!/usr/bin/env node
 
 var express = require('express'),
-	cookieParser = require('cookie-parser'),
-	bodyParser = require('body-parser'),
+	app = express(),
+	http = require('http'),
+	server = http.createServer(app),
+	notifiy = require('./src/notifiy')(server);
+
+//将通知类放到 app中
+app.set('notifiy', notifiy);
+//将通知放到全局对象中
+global.notifiy = notifiy;
+
+var bodyParser = require('body-parser'),
 	serverStatic = require('./src/serverStatic'),
 	serverDir = require('./src/serverDir'),
 	commandConfig = require('./src/parseCommand'),
 	config = require('./src/config'),
 	serverFtl = require('./src/serverFtl'),
 	log = require('./src/log'),
-	app = express(),
 	subApp = require('./src/subApp'),
 	// subApp即内部系统应用的path
 	innerPath = '/___mySystemInner',
 	child_process = require('child_process');
 innerPath = innerPath.replace(/^\/|\/$/, "");
 innerPath = "/" + innerPath;
-
 
 // 初始化配置
 var port;
@@ -68,20 +75,41 @@ app.use(function(req, res, next){
 	});
 });
 
-app.listen(port, function() {
+server.listen(port, function() {
 	log.info('服务器成功启动', '端口号码', port);
 	// 启动一个默认浏览器打开后台管理页面
 	var cmd, uri = "http://127.0.0.1" + (port == 80 ? "" : ":" + port);
 	uri += innerPath;
-	uri += "/sys/manager.html";	
+	uri += "/sys/manager.html";
 	if (process.platform === 'win32') {
-	  cmd = 'start';
+		cmd = 'start';
 	} else if (process.platform === 'linux') {
-	  cmd = 'xdg-open';
+		cmd = 'xdg-open';
 	} else if (process.platform === 'darwin') {
-	  cmd = 'open';
+		cmd = 'open';
 	}
 	log.info('后台管理页面打开中');
 
 	child_process.exec([cmd, uri].join(' '));
 });
+
+
+//app.listen(port, function() {
+//	log.info('服务器成功启动', '端口号码', port);
+//	// 启动一个默认浏览器打开后台管理页面
+//	var cmd, uri = "http://127.0.0.1" + (port == 80 ? "" : ":" + port);
+//	uri += innerPath;
+//	uri += "/sys/manager.html";
+//	if (process.platform === 'win32') {
+//	  cmd = 'start';
+//	} else if (process.platform === 'linux') {
+//	  cmd = 'xdg-open';
+//	} else if (process.platform === 'darwin') {
+//	  cmd = 'open';
+//	}
+//	log.info('后台管理页面打开中');
+//
+//	child_process.exec([cmd, uri].join(' '));
+//});
+
+
