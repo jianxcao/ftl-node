@@ -16,13 +16,11 @@
 			}, false);
 			ws.addEventListener('message', function(event) {
 				var data = event.data;
-				console.log(data);
 				try{
 					data = JSON.parse(data);
 					com.send(data);
 				}catch (e) {
-					console.log("aaaaaaaa", e);
-					//console.error("%c", "服务器发送了一个未知的消息:" + data, "color:#f51b1b");
+					console.error("%c", "服务器发送了一个未知的消息:" + data, "color:#f51b1b");
 				}
 			}, false);
 			// 监听Socket的关闭
@@ -44,9 +42,25 @@
 		 */
 		send: function(messageObj) {
 			var area = this.getMessageArea(messageObj.groupName, messageObj.branchName);
-			var tmpl =  '<p <%if (data.type=="error") {%>class="err"<%} else {%>class="info"<%}%>><%=data.title|| ""%><br><%=data.message || ""%></p>';
-			if (area && area.length) {
+			var tmpl =  '<span <%if (data.type=="error") {%>class="err"<%} else {%>class="info"<%}%>><%=data.title%><%=data.message || ""%></span>';
+			var reg = /\n/g;
+			var end = /<br>$/;
+			if (messageObj.title) {
+				messageObj.title = safeHTML(messageObj.title);
+				messageObj.title = messageObj.title.replace(reg, "<br>");
+				if (!end.test(messageObj.title)) {
+					messageObj.title += "<br>";
+				}
+			}
+			if (messageObj.message) {
+				messageObj.message = safeHTML(messageObj.message);
 				console.log(messageObj.message);
+				messageObj.message = messageObj.message.replace(reg, "<br>");
+				if (!end.test(messageObj.message)) {
+					messageObj.message += "<br>";
+				}
+			}
+			if (area && area.length) {
 				html = $.template(tmpl, messageObj);
 				area.append(html);
 				area[0].scrollTop = area[0].scrollHeight;
@@ -54,7 +68,7 @@
 		},
 		getMessageArea: function(groupName, branchName) {
 			var area = groupName && branchName ? $('body .bodyMessage') : $('body .bodyMessage');
-			var tmpl = ['<div <%if (data.groupName && data.branchName){%>class="messageArea bodyMessage"<%} else {%>class="messageArea bodyMessage" groupName="<%=data.groupName%>" branchName="<%=data.branchName%>" <%}%>>',
+			var tmpl = ['<div contentEditable=true <%if (data.groupName && data.branchName){%>class="messageArea bodyMessage"<%} else {%>class="messageArea bodyMessage" groupName="<%=data.groupName%>" branchName="<%=data.branchName%>" <%}%>>',
 				"</div>"].join('');
 			var html;
 			if (!area.length) {
@@ -67,6 +81,14 @@
 			}
 			return area;
 		}
+	};
+	var	safeHTML = function( str ){
+		return String(str)
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
 	};
 	notifiy.init();
 	window.notifiy =  notifiy;

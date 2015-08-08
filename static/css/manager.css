@@ -120,23 +120,20 @@ header{
 	text-align: center;
 	z-index: 999;
 }
-
 .messageArea {
     position: absolute;
     background:#2b2b2b;
     width: 100%;
     bottom: 0;
-    min-height: 100px;
-    max-height: 500px;
-    height: 200px;
+    height: 300px;
     overflow: scroll;
+    padding-left: 10px;
 }
 .messageArea .err {
-    /*color: #de6a67;*/
     color: #c12e2a;
     line-height: 1.5;
 }
 .messageArea .info {
     color: #22ac38;
-    line-height: 1;
+    line-height: 1.5;
 }

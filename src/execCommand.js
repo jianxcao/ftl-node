@@ -17,12 +17,18 @@ var execOrder = function(fun) {
 	fun = fun || noop;
 	this.commandOpt.encoding = "GBK";
 	log.info("准备运行命令:" + this.command);
-	cmd = exec(this.command, this.commandOpt);
+	cmd = exec(this.command, this.commandOpt, function(err, stdout, stdin) {
+		console.log(err, stdout, stdin);
+		if (err) {
+			com.notifiy("error", err.message, err.stack);
+		} else {
+			com.notifiy("info", "系统停止了"+ com.command + "命令的运行");
+		}
+	});
 	// 进程意外退出或者进程被杀掉，重置状态
-	cmd.once("exit", function(err) {
+	cmd.once("exit", function() {
 		cmd = null;
 		com.runing = false;
-		com.notifiy("error", err.message, err.stack);
 	});
 	// 把流给主进程
 	cmd.stdout.pipe(process.stdout);
@@ -66,6 +72,7 @@ var exit = function(fun) {
 		if (isHaveErr) {
 			fun(false);
 		} else {
+			notifiy.send("info", "成功停止命令:" + com.command);
 			log.info("成功停止命令:" + com.command);
 			fun(true);
 		}
@@ -73,11 +80,15 @@ var exit = function(fun) {
 		cp.exec('taskkill /PID ' + pid + ' /T /F', {
 			encoding: "GBK"
 		}, function(err, stdout, stderr) {
+			var errMessage;
 			if (stderr && stderr.length) {
 				fun(false);
+				errMessage = iconv.decode(stderr, 'GBK');
+				notifiy.send("error", errMessage);
 				log.error(iconv.decode(stderr, 'GBK'));
 			} else {
 				log.info("成功停止命令:" + com.command);
+				notifiy.send("info", "成功停止命令:" + com.command);
 				fun(true);
 			}
 		});

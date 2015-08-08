@@ -92,24 +92,3 @@ server.listen(port, function() {
 
 	child_process.exec([cmd, uri].join(' '));
 });
-
-
-//app.listen(port, function() {
-//	log.info('服务器成功启动', '端口号码', port);
-//	// 启动一个默认浏览器打开后台管理页面
-//	var cmd, uri = "http://127.0.0.1" + (port == 80 ? "" : ":" + port);
-//	uri += innerPath;
-//	uri += "/sys/manager.html";
-//	if (process.platform === 'win32') {
-//	  cmd = 'start';
-//	} else if (process.platform === 'linux') {
-//	  cmd = 'xdg-open';
-//	} else if (process.platform === 'darwin') {
-//	  cmd = 'open';
-//	}
-//	log.info('后台管理页面打开中');
-//
-//	child_process.exec([cmd, uri].join(' '));
-//});
-
-
