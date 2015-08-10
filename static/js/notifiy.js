@@ -44,19 +44,22 @@
 			var area = this.getMessageArea(messageObj.groupName, messageObj.branchName);
 			var tmpl =  '<span <%if (data.type=="error") {%>class="err"<%} else {%>class="info"<%}%>><%=data.title%><%=data.message || ""%></span>';
 			var reg = /\n/g;
+			var time = /^\[.*\]$/;
 			var end = /<br>$/;
 			if (messageObj.title) {
+				messageObj.title = messageObj.title.trim();
 				messageObj.title = safeHTML(messageObj.title);
 				messageObj.title = messageObj.title.replace(reg, "<br>");
-				if (!end.test(messageObj.title)) {
+				if (!end.test(messageObj.title) && !time.test(messageObj.title)) {
 					messageObj.title += "<br>";
 				}
 			}
 			if (messageObj.message) {
+				messageObj.message = messageObj.message.trim();
 				messageObj.message = safeHTML(messageObj.message);
 				console.log(messageObj.message);
 				messageObj.message = messageObj.message.replace(reg, "<br>");
-				if (!end.test(messageObj.message)) {
+				if (!end.test(messageObj.message) && !time.test(messageObj.message)) {
 					messageObj.message += "<br>";
 				}
 			}
