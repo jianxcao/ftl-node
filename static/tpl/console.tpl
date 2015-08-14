@@ -1,4 +1,4 @@
-<div class="consoleArea">
+<div class="consoleArea" style="display:none;">
 	<div class="perch"></div>
 	<button type="button" class="btn btn-default minBtn">
 		<span class="glyphicon glyphicon-console"></span>&nbsp;&nbsp;日志

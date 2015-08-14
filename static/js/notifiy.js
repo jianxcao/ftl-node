@@ -60,6 +60,7 @@ define(["jquery", "js/console"], function($, myConsole) {
 					messageObj.message += "<br>";
 				}
 			}
+			myConsole.show();
 			myConsole.out(messageObj);
 		}
 	};
