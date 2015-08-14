@@ -14,35 +14,32 @@ var fs = require('fs');
 var config = require('../src/config');
 var path = require('path');
 var log = require('../src/log');
-
+var RcFinder = require('rcfinder');
 module.exports = find = function(groupName, branchName) {
 	var rootPath = getRootPath(groupName, branchName);
-	var config;
+	var config, fullPath, rcFinder;
 	// 成功获取了跟路径
 	if (rootPath) {
-		var fullPath = path.join(rootPath, "run.config.js");
-		// 找到这个模块了，直接返回
-		if (require.cache && require.cache[fullPath]) {
-			config = require(fullPath);
-			config.rootPath =  rootPath;
-			config.fullPath = fullPath;
-			return config;
-		} else {
-			// 如果找到了这个文件
-			if (fs.existsSync(fullPath)) {
+		rootPath = path.normalize(rootPath);
+		fullPath = path.join(rootPath, "run.config.js");
+		rcFinder = new RcFinder('run.config.js', {
+			loader: function(p) {
 				try{
 					// 以模块形式引入这个文件
-					config = require(fullPath);
+					config = require(p);
 					if (config) {
-						config.rootPath =  rootPath;
-						config.fullPath = fullPath;
+						config.rootPath =  path.dirname(p);
+						config.fullPath = p;
+						log.debug("配置文件dirname:" + config.rootPath);
+						log.debug("配置文件路径:" + config.fullPath);
 					}
 					return config;
-				}catch(err) {
+				} catch(err) {
 					log.error(err);
 				}
 			}
-		}
+		});
+		return rcFinder.find(rootPath);
 	}
 };
 
