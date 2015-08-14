@@ -22,7 +22,7 @@ exports = module.exports = function serveFtl(port) {
 	consoleErrors = [];
 	var url  = parseurl(req);
 	var port = req.app.get("port");
-	var fullUrl = req.protocol + '://' + req.get('host') + ( port == 80 || port == 443 ? '' : ':'+ port ) + req.path;
+	var fullUrl = req.protocol + '://' + req.get('host') +  req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
 	var ext = path.extname(pathname).replace('.', "");
@@ -108,7 +108,7 @@ var parseInclude = function(fullPath, tmpFilePaths) {
 	var dirname = pathResult.dir;
 	var newFileContent = null;
 	try{
-		var reg = /(<#--\s*){0,1}<#(include|import|mock)\s+(?:"|')([^"'\s]+)(?:"|')(?:\s+as\s+([^\s>]+)){0,1}\s*>(\s*-->){0,1}/g;
+		var reg = /(<#--\s*){0,1}(?:<#){0,1}(include|import|mock)\s+(?:"|')([^"'\s]+)(?:"|')(?:\s+as\s+([^\s>]+)){0,1}\s*(?:>){0,1}(\s*-->){0,1}/g;
 		var one;
 		var command;
 		var currentPath;
@@ -119,6 +119,7 @@ var parseInclude = function(fullPath, tmpFilePaths) {
 		});
 		newFileContent = fileContent;
 		while ((one = reg.exec(fileContent)) !== null) {
+			console.log(one);
 			command = one[2];
 			currentPath = one[3];
 			if (command && currentPath) {

@@ -17,18 +17,12 @@ var execOrder = function(fun) {
 	fun = fun || noop;
 	this.commandOpt.encoding = "GBK";
 	log.info("准备运行命令:" + this.command);
-	cmd = exec(this.command, this.commandOpt, function(err, stdout, stdin) {
-		console.log(err, stdout, stdin);
-		if (err) {
-			com.notifiy("error", err.message, err.stack);
-		} else {
-			com.notifiy("info", "系统停止了"+ com.command + "命令的运行");
-		}
-	});
+	cmd = exec(this.command, this.commandOpt);
 	// 进程意外退出或者进程被杀掉，重置状态
 	cmd.once("exit", function() {
 		cmd = null;
 		com.runing = false;
+		com.notifiy("info", "系统停止了"+ com.command + "命令的运行");
 	});
 	// 把流给主进程
 	cmd.stdout.pipe(process.stdout);
@@ -37,12 +31,11 @@ var execOrder = function(fun) {
 		com.notifiy("info", "", chunk.toString());
 	});
 	cmd.stderr.on('data', function(chunk) {
-		com.notifiy("error", "", chunk.toString());
+		com.notifiy("err", "", chunk.toString());
 	});
 	com.cmd = cmd;
 	com.runing = true;
 	fun(true);
-
 };
 var exit = function(fun) {
 	if (!this.runing) {
@@ -72,7 +65,7 @@ var exit = function(fun) {
 		if (isHaveErr) {
 			fun(false);
 		} else {
-			notifiy.send("info", "成功停止命令:" + com.command);
+			com.notifiy("info", "成功停止命令:" + com.command);
 			log.info("成功停止命令:" + com.command);
 			fun(true);
 		}
@@ -84,11 +77,12 @@ var exit = function(fun) {
 			if (stderr && stderr.length) {
 				fun(false);
 				errMessage = iconv.decode(stderr, 'GBK');
-				notifiy.send("error", errMessage);
+				com.notifiy("err", errMessage);
 				log.error(iconv.decode(stderr, 'GBK'));
 			} else {
 				log.info("成功停止命令:" + com.command);
-				notifiy.send("info", "成功停止命令:" + com.command);
+				com.notifiy("info", "", iconv.decode(stdout, 'GBK'));
+				com.notifiy("info", "成功停止命令:" + com.command);
 				fun(true);
 			}
 		});

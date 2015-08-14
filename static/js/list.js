@@ -7,7 +7,7 @@
 					'<% var url = \/.*\\/$\/.test(window.location.pathname) ? window.location.pathname : window.location.pathname + "/";  %>',
 					'<% data.forEach(function(oneData) {%>',
 						'<tr>',
-							'<td><a href="<%=url%><%=oneData.name%>"><strong><%=oneData.name%></strong></a></td>',
+							'<td><a href="<%=url%><%=oneData.name%>"><%if (oneData.isDirectory) {%><span class="glyphicon glyphicon-folder-close"></span>&nbsp;&nbsp;<%}%><strong><%=oneData.name%></strong></a></td>',
 							'<td><a href="<%=url%><%=oneData.name%>"><%=oneData.size%></a></td>',
 							'<td><a href="<%=url%><%=oneData.name%>"><%=oneData.mtime.getFullYear()%>年<%=oneData.mtime.getMonth() + 1%>月<%=oneData.mtime.getDate()%>日<%=oneData.mtime.getHours()%>时<%=oneData.mtime.getMinutes()%>分<%=oneData.mtime.getSeconds()%>秒</a></td>',
 						'</tr>',

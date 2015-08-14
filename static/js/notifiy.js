@@ -1,6 +1,6 @@
 // 通知
 // 基于websocket
-(function($) {
+define(["jquery", "js/console"], function($, myConsole) {
 	var notifiy = {
 		init: function() {
 			var host = window.document.location.host.replace(/:.*/, '');
@@ -20,7 +20,7 @@
 					data = JSON.parse(data);
 					com.send(data);
 				}catch (e) {
-					console.error("%c", "服务器发送了一个未知的消息:" + data, "color:#f51b1b");
+					// console.error("服务器发送了一个未知的消息:" + data);
 				}
 			}, false);
 			// 监听Socket的关闭
@@ -41,8 +41,6 @@
 		 * 如果存在 分支名称和分组名称则消息会被强制放入这个里面，如果不存在这个元素就会不输出这个消息
 		 */
 		send: function(messageObj) {
-			var area = this.getMessageArea(messageObj.groupName, messageObj.branchName);
-			var tmpl =  '<span <%if (data.type=="error") {%>class="err"<%} else {%>class="info"<%}%>><%=data.title%><%=data.message || ""%></span>';
 			var reg = /\n/g;
 			var time = /^\[.*\]$/;
 			var end = /<br>$/;
@@ -57,32 +55,12 @@
 			if (messageObj.message) {
 				messageObj.message = messageObj.message.trim();
 				messageObj.message = safeHTML(messageObj.message);
-				console.log(messageObj.message);
 				messageObj.message = messageObj.message.replace(reg, "<br>");
 				if (!end.test(messageObj.message) && !time.test(messageObj.message)) {
 					messageObj.message += "<br>";
 				}
 			}
-			if (area && area.length) {
-				html = $.template(tmpl, messageObj);
-				area.append(html);
-				area[0].scrollTop = area[0].scrollHeight;
-			}
-		},
-		getMessageArea: function(groupName, branchName) {
-			var area = groupName && branchName ? $('body .bodyMessage') : $('body .bodyMessage');
-			var tmpl = ['<div contentEditable=true <%if (data.groupName && data.branchName){%>class="messageArea bodyMessage"<%} else {%>class="messageArea bodyMessage" groupName="<%=data.groupName%>" branchName="<%=data.branchName%>" <%}%>>',
-				"</div>"].join('');
-			var html;
-			if (!area.length) {
-				html = $.template(tmpl, {
-					groupName: groupName,
-					branchName: branchName
-				});
-				area = $(html);
-				$('body').append(area);
-			}
-			return area;
+			myConsole.out(messageObj);
 		}
 	};
 	var	safeHTML = function( str ){
@@ -94,5 +72,5 @@
 			.replace(/'/g, "&#39;");
 	};
 	notifiy.init();
-	window.notifiy =  notifiy;
-})(window.jQuery);
+	return notifiy;
+});

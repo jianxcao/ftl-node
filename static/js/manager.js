@@ -1,66 +1,40 @@
-(function($) {
-	var getGuid = function() {
-		getGuid.__id = getGuid.__id || 10;
-		getGuid.__id = getGuid.__id + 1;
-		return getGuid.__id;
-	};
-	var baseUrl = window.baseUrl;
+define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "js/command", "lib/scrollBar/scrollBar", "bootstrap"],
+ function($, tplToHtml, setData, Sortable, infoTip, command, scrollBar) {
 	var manager = {
-		cache: {
-			// 所有的路径存放
-			setData: {},
-			// 所有路径的备份，当配置发生变化，但是还没同步到服务器的时候，这个字符串和setData不同
-			strSetData: "",
-			sortObj: {}
+		cache: {},
+		init: function(configModel) {
+			this.configModel = configModel;
+			manager.cache.panelEle = $('.content-col');
+			manager.cache.sidebarEle = $('.sidebar');
+			command.saveCheckCommand(1);
+			manager.initDefaultData()
+			.then(function() {
+				manager.initSideNav();
+				manager.navChangeSort();
+				manager.initMenu();
+				manager.initProjectPanelEvt();
+				manager.initSave();
+			});
 		},
-		init: function() {
-			$.get(baseUrl + "/sys/get_config_ajax.html").then(function(data) {
-					try {
-						if (typeof data == "string") {
-							data = JSON.parseJSON('data');
-						}
-						manager.cache.setData = data;
-					} catch (e) {
-						console.error("从服务器获取数据后解析错误");
-						manager.cache.setData = {};
-					}
-				}, function() {
-					console.error("loading error");
-					manager.cache.setData = {};
-				})
-				.always(function() {
-					// 缓存数据为空，一开始的时候
-					manager.cache.strSetData = JSON.stringify({});
-					manager.saveCheckCommand(1);
-					manager.cache.strSetData = JSON.stringify(manager.cache.setData);
-					manager.cache.panelEle = $('.content-col');
-					manager.cache.sidebarEle = $('.sidebar');
-				})
-				.then(manager.initDefaultData)
-				.always(function() {
-					manager.initSideNav();
-					manager.navChangeSort();
-					manager.initMenu();
-					manager.initProjectPanelEvt();
-					manager.initSave();
-				});
-		},
+		// 右侧列表默认初始化
 		initDefaultData: function() {
-			var setData = manager.cache.setData;
-			if (!setData.host) {
-				setData.host = [];
+			var data = this.configModel.data;
+			if (!data.host) {
+				data.host = [];
 			}
 			// 初始化左侧菜单
-			return manager.getTplByPath("/tpl/manager-menu.tpl").then(function(tpl) {
-				var d = $.Deferred();
-				var html = $.template(tpl, setData.host);
-				manager.cache.sidebarEle.append(html);
+			return tplToHtml("/tpl/manager-menu.tpl", data.host)
+			.then(function(html) {
+				if (html) {
+					manager.cache.sidebarEle.append(html);
+				}
 			});
 		},
 		// 左侧菜单初始化
 		initSideNav: function() {
 			var sidebarEle = this.cache.sidebarEle,
-				panelEle = this.cache.panelEle;
+				panelEle = this.cache.panelEle,
+				configModel = this.configModel;
 			// 展开收起
 			sidebarEle.delegate('dt', 'click', function(e) {
 					var me = $(this),
@@ -81,12 +55,12 @@
 						dt = me.closest('dt'),
 						dl,
 						tmp, groupName, branchName,
-						host = manager.cache.setData.host;
+						host = configModel.data.host;
 					// 如果选择的是一个分支
 					if (dd.length) {
 						groupName = dd.parent().attr('data-group-name');
 						branchName = dd.attr('data-branch-name');
-						tmp = manager.findBranch(groupName, branchName);
+						tmp = configModel.findBranch(groupName, branchName);
 						if (tmp) {
 							// 如果当前分支是激活的
 							panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']").remove();
@@ -97,7 +71,7 @@
 					//  如果选择的是一个分组，直接删除这个分组
 					if (dt.length) {
 						groupName = dt.attr('data-group-name');
-						tmp = manager.findGroup(groupName);
+						tmp = configModel.findGroup(groupName);
 						if (tmp) {
 							dl = dt.closest('dl');
 							panelEle.find(".form-wrap[data-group-name='" + groupName + "']").remove();
@@ -120,7 +94,7 @@
 						dl = dd.closest('dl[data-fun]');
 						groupName = dl.attr('data-group-name');
 						branchName = dd.attr('data-branch-name');
-						tmp = manager.findBranch(groupName, branchName);
+						tmp = configModel.findBranch(groupName, branchName);
 						status = !dd.hasClass('disabled');
 						tmp.branch.disabled = status;
 						dd[status ? "addClass" : "removeClass"]('disabled');
@@ -148,7 +122,7 @@
 					if (dt.length) {
 						dl = dt.closest('dl');
 						groupName = dl.attr('data-group-name');
-						tmp = manager.findGroup(groupName);
+						tmp = configModel.findGroup(groupName);
 						if (tmp) {
 							status = !dl.hasClass('disabled');
 							dl[status ? "addClass" : "removeClass"]('disabled');
@@ -224,7 +198,7 @@
 			}).delegate('.disabled-all', 'click', function(e) {
 				treeWrap.find('dl[data-fun], dd[data-fun]').addClass('disabled');
 				panelEle.find('.drag-wrap .form-group').addClass('disabled');
-				var setData = manager.cache.setData;
+				var setData = manager.configModel.data;
 				// 修改内存数据
 				if (setData.host && setData.host.length) {
 					setData.host.forEach(function(oneHost) {
@@ -248,7 +222,8 @@
 		},
 		initGroupDialog: function(treeWrap, createGroup) {
 			var groupNameEle = $('.group-name', createGroup);
-			var host = this.cache.setData.host;
+			var configModel = this.configModel;
+			var host = configModel.data.host;
 			// 确认创建一个分组
 			createGroup.find('.confirm-create-group').click(function() {
 				var val = groupNameEle.val(),
@@ -258,7 +233,7 @@
 				if (!val) {
 					err = "分组名称是必须的";
 				} else {
-					gEle = manager.findGroup(val);
+					gEle = configModel.findGroup(val);
 					if (gEle) {
 						err = "已经有同名的分组存在";
 					}
@@ -266,13 +241,12 @@
 				if (err) {
 					alert(err);
 				} else {
-					manager.getTplByPath("/tpl/manager-menu.tpl")
-						.then(function(tpl) {
-							var data = {
-								groupName: val
-							};
+					var data = {
+						groupName: val
+					};
+					tplToHtml("/tpl/manager-menu.tpl", [data])
+						.then(function(html) {
 							host.push(data);
-							var html = $.template(tpl, [data]);
 							html = $(html);
 							manager.branchSort(html.find('dd.item dl')[0]);
 							treeWrap.append(html);
@@ -291,8 +265,10 @@
 		initBranchDialog: function(treeWrap, createBranch) {
 			var groupNameEle = $('.group-name', createBranch),
 				branchNameEle = $('.branch-name', createBranch),
-				groupNameMenu = $('.group-name-menu', createBranch),
-				host = this.cache.setData.host;
+				groupNameMenu = $('.group-name-menu', createBranch);
+			var configModel = this.configModel;
+			var host = configModel.data.host;
+
 			groupNameMenu.on('click', "li a", function(e) {
 				groupNameEle.val($.trim($(this).text()));
 				branchNameEle.focus();
@@ -330,9 +306,9 @@
 					return;
 				}
 				// 已经存在这个分组
-				tmp = manager.findGroup(groupName);
+				tmp = configModel.findGroup(groupName);
 				if (tmp) {
-					status = manager.findBranch(groupName, branchName);
+					status = configModel.findBranch(groupName, branchName);
 					if (status) {
 						alert('该分支已经存在');
 						return;
@@ -350,17 +326,16 @@
 						.find('dd[data-fun]:last').trigger('click');
 					// 当前分组不存在
 				} else {
-					manager.getTplByPath("/tpl/manager-menu.tpl")
-						.then(function(tpl) {
-							var data = {
-									groupName: groupName,
-									branches: [{
-										branchName: branchName
-									}]
-								},
-								html, dl, dd;
+					var data = {
+						groupName: groupName,
+						branches: [{
+							branchName: branchName
+						}]
+					};
+					tplToHtml("/tpl/manager-menu.tpl", [data])
+						.then(function(html) {
+							var dl, dd;
 							host.push(data);
-							html = $.template(tpl, [data]);
 							html = $(html);
 							treeWrap.append(html);
 							dl = html.find('dd.item dl');
@@ -387,8 +362,7 @@
 						newIndex = evt.newIndex;
 					// 找到父元素
 					var ele = $(this.el),
-						setData = manager.cache.setData,
-						host = setData.host;
+						host = manager.configModel.data.host;
 					if (host && host.length) {
 						if (typeof oldIndex == "number" && typeof newIndex === "number" &&
 							host[newIndex] && host[oldIndex]) {
@@ -425,7 +399,7 @@
 					// 找到父元素
 					var ele = $(this.el),
 						groupName = ele.attr('data-group-name');
-					tmp = manager.findGroup(groupName);
+					tmp = manager.configModel.findGroup(groupName);
 					if (typeof oldIndex == "number" && typeof newIndex === "number" &&
 						oldIndex !== newIndex && tmp && tmp.group && tmp.group.branches) {
 						val = tmp.group.branches;
@@ -440,93 +414,95 @@
 		// 右侧panel上的事件
 		initProjectPanelEvt: function() {
 			var sidebarEle = this.cache.sidebarEle,
-				content = this.cache.panelEle;
-			this.getTplByPath("/tpl/manager-one-content.tpl")
+				content = this.cache.panelEle,
+				configModel = this.configModel;
+			tplToHtml("/tpl/manager-one-content.tpl")
 				.then(function(html) {
-					content.on('click', '.create-path', function(e) {
-							var me = $(this);
-							me.closest('.form-wrap').find('.drag-wrap').append(html);
-						})
-						.on('click', ".start-shell, .stop-shell", function(e) {
-							var me = $(this);
-							var pp = me.parents('.form-wrap');
-							var param = {
-								type: me.hasClass('start-shell') ? 1 : 2,
-								groupName: pp.attr("data-group-name"),
-								branchName: pp.attr("data-branch-name")
-							};
-							manager.sendCommand(param);
-							return false;
-						})
-						.on('click', ".del-icon", function() {
-							var me = $(this);
-							me.closest('.form-group').remove();
-							return false;
-						})
-						// 禁用某个分支下的某一条
-						.on('click', ".dis-icon", function() {
-							var dd = $(this).closest('.form-group'),
-								formWrap = dd.closest('.form-wrap'),
-								branchName = formWrap.attr('data-branch-name'),
-								groupName = formWrap.attr('data-group-name'),
-								status, tmp,
-								index = dd.index();
-							if (branchName && groupName) {
-								status = !dd.hasClass('disabled');
-								tmp = manager.findBranch(groupName, branchName);
-								// 改自己的状态
-								if (tmp.branch && tmp.branch.val && tmp.branch.val[index]) {
-									tmp.branch.val[index].disabled = status;
-									dd[status ? "addClass" : "removeClass"]('disabled');
-									status = true;
-									// 只要有一个是false就是false
-									$.each(tmp.branch.val, function(index, one) {
-										if (!one.disabled) {
-											status = false;
-											return false;
-										}
-									});
-									if (tmp.branch.disabled !== status) {
-										tmp.branch.disabled = status;
-										sidebarEle.find("dl[data-fun='group'][data-group-name='" + groupName + "']")[status ? "addClass" : "removeClass"]('disabled');
+					content
+					.on('click', '.create-path', function(e) {
+						var me = $(this);
+						me.closest('.form-wrap').find('.drag-wrap').append(html);
+					})
+					.on('click', ".start-shell, .stop-shell", function(e) {
+						var me = $(this);
+						var pp = me.parents('.form-wrap');
+						var param = {
+							type: me.hasClass('start-shell') ? 1 : 2,
+							groupName: pp.attr("data-group-name"),
+							branchName: pp.attr("data-branch-name")
+						};
+						command.sendCommand(param);
+						return false;
+					})
+					.on('click', ".del-icon", function() {
+						var me = $(this);
+						me.closest('.form-group').remove();
+						return false;
+					})
+					// 禁用某个分支下的某一条
+					.on('click', ".dis-icon", function() {
+						var dd = $(this).closest('.form-group'),
+							formWrap = dd.closest('.form-wrap'),
+							branchName = formWrap.attr('data-branch-name'),
+							groupName = formWrap.attr('data-group-name'),
+							status, tmp,
+							index = dd.index();
+						if (branchName && groupName) {
+							status = !dd.hasClass('disabled');
+							tmp = configModel.findBranch(groupName, branchName);
+							// 改自己的状态
+							if (tmp.branch && tmp.branch.val && tmp.branch.val[index]) {
+								tmp.branch.val[index].disabled = status;
+								dd[status ? "addClass" : "removeClass"]('disabled');
+								status = true;
+								// 只要有一个是false就是false
+								$.each(tmp.branch.val, function(index, one) {
+									if (!one.disabled) {
+										status = false;
+										return false;
 									}
-									status = true;
-									$.each(tmp.group.branches, function(index, branch) {
-										if (!branch.disabled) {
-											status = false;
-											return false;
-										}
-									});
-									if (tmp.group.disabled !== status) {
-										tmp.group.disabled = status;
-										sidebarEle.find("dd[data-branch-name='" + branchName + "'][data-fun='project']")[status ? "addClass" : "removeClass"]('disabled');
+								});
+								if (tmp.branch.disabled !== status) {
+									tmp.branch.disabled = status;
+									sidebarEle.find("dl[data-fun='group'][data-group-name='" + groupName + "']")[status ? "addClass" : "removeClass"]('disabled');
+								}
+								status = true;
+								$.each(tmp.group.branches, function(index, branch) {
+									if (!branch.disabled) {
+										status = false;
+										return false;
 									}
+								});
+								if (tmp.group.disabled !== status) {
+									tmp.group.disabled = status;
+									sidebarEle.find("dd[data-branch-name='" + branchName + "'][data-fun='project']")[status ? "addClass" : "removeClass"]('disabled');
 								}
 							}
-							return false;
-						});
+						}
+						return false;
+					});
 				});
 			return this;
 		},
 		// 点击菜单后右侧panel初始化
 		initProjectPanel: function(groupName, branchName) {
 			var panelEle = manager.cache.panelEle,
+				configModel = this.configModel,
+				data, tmp,
 				allFormWrap = panelEle.find('.form-wrap');
 			current = allFormWrap.filter("[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
 			if (current.length) {
 				allFormWrap.hide();
 				current.show();
 			} else {
-				manager.getTplByPath("/tpl/manager-content.tpl")
-				.then(function(tpl) {
+				tmp = configModel.findBranch(groupName, branchName);
+				data = $.extend({
+					groupName: groupName,
+					branchName: branchName
+				}, tmp ? tmp.branch : null);
+				tplToHtml("/tpl/manager-content.tpl", data)
+				.then(function(html) {
 					allFormWrap.hide();
-					var data, html, tmp;
-					tmp = manager.findBranch(groupName, branchName);
-					data = $.extend({
-						groupName: groupName,
-						branchName: branchName
-					}, tmp ? tmp.branch : null);
-					html = $.template(tpl, data);
 					manager.cache.panelEle.append(html);
 					current = panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
 					new Sortable(current.find('.drag-wrap')[0], {
@@ -543,7 +519,7 @@
 							var ele = $(this.el).closest('.form-wrap'),
 								branchName = ele.attr('data-branch-name'),
 								groupName = ele.attr('data-group-name');
-							tmp = manager.findBranch(groupName, branchName);
+							tmp = configModel.findBranch(groupName, branchName);
 							if (typeof oldIndex == "number" && typeof newIndex === "number" &&
 								tmp && tmp.branch && tmp.branch.val) {
 								val = tmp.branch.val;
@@ -559,14 +535,15 @@
 				.then(function() {
 					// 检测项目根目录是否配置run.config.js并且该js 被node require后没有任何问题
 					//则置入 start 和 stop按钮
-					return manager.setCommandBtn(groupName, branchName);
+					return command.setCommandBtn(groupName, branchName);
 				});
 			}
 			return this;
 		},
 		// 更新面板的数据
 		setPanelData: function() {
-			var content = this.cache.panelEle;
+			var content = this.cache.panelEle,
+				configModel = this.configModel;
 			content.find('.form-wrap[data-branch-name][data-group-name]').each(function() {
 				var me = $(this),
 					formGroup = me.find('.form-group'),
@@ -595,285 +572,19 @@
 						data.val.push(one);
 					}
 				});
-				tmp = manager.findBranch(groupName, branchName);
+				tmp = configModel.findBranch(groupName, branchName);
 				if (tmp && tmp.branch) {
 					$.extend(tmp.branch, data);
 				}
 			});
 			return this;
 		},
-		// 找到一个分组
-		findGroup: function(groupName) {
-			var retVal = null,
-				setData = this.cache.setData;
-			if (setData.host && setData.host.length && groupName) {
-				$.each(setData.host, function(i, group) {
-					if (group.groupName && group.groupName == groupName) {
-						retVal = {
-							group: group,
-							index: i
-						};
-						return false;
-					}
-				});
-			}
-			return retVal;
-		},
-		// 找到一个分支
-		findBranch: function(groupName, branchName) {
-			var retVal = null,
-				tmp, group;
-			if (groupName && branchName) {
-				tmp = manager.findGroup(groupName);
-				if (tmp) {
-					group = tmp.group;
-					if (group && group.branches && group.branches.length) {
-						$.each(group.branches, function(j, branch) {
-							if (branch.branchName && branch.branchName == branchName) {
-								retVal = {
-									group: group,
-									branch: branch,
-									index: j
-								};
-								return false;
-							}
-						});
-					}
-				}
-			}
-			return retVal;
-		},
-		// 获取模板
-		getTplByPath: function(path) {
-			var d = $.Deferred();
-			manager.cache.tpl = manager.cache.tpl || {};
-			if (manager.cache.tpl[path]) {
-				d.resolve(manager.cache.tpl[path]);
-				return d;
-			} else {
-				return $.get(window.cdnBaseUrl + path)
-					.fail(function() {
-						alert("路径为" + path + "的模板载入错误");
-					}).success(function(data) {
-						manager.cache.tpl[path] = data;
-					});
-			}
-		},
-		// 发送执行run.config.js中的命令
-		/**
-		 *
-		 * @param param ajax参数
-		 * {
-		 *   type: 1|2 1表示运行命令，2表示停止命令
-		 *   branchName 分支名称
-		 *   groupName 分组名称
-		 * }
-		 * @pram isTip true 则提示否则 不给提示，仅仅调用
-		 * @returns promise
-		 */
-		/*stats解析 0表示系统错误
-		  *1开头表示 启动命令的结果
-		  * 11: 运行命令出错
-		  * 12: 命令已经在运行中
-		  * 13: 没有配置文件
-		  * 14: 配置文件解析出错
-		  *2开头表示 结束命令的结果
-		  * 21 停止命令出错
-		  * 22 表示当前么有这个命令
-		**/
-		sendCommand: function(param, isTip) {
-			if (isTip === undefined) {
-				isTip = true;
-			}
-			return $.post(baseUrl + "/sys/shell_control.html", param)
-				.then(function(data) {
-					try {
-						data = typeof data === "object" ? data : JSON.parseJSON(data);
-						data.status = +data.status || 0;
-						if (data.status === 1 || data.status === 2) {
-							isTip && manager.toast(data.message);
-						} else {
-							isTip && manager.wrongToast(data.message);
-						}
-					} catch (err) {
-						isTip && manager.wrongToast();
-					}
-					return data;
-				})
-				.fail(function() {
-					manager.wrongToast();
-				});
-		},
-		// 设置 每个项目上的启动和停止按钮的显示
-		setCommandBtn: function(groupName, branchName) {
-			return manager.checkCommand(groupName, branchName)
-				.then(function(status) {
-					// 找到当前面板
-					var current = manager.cache.panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
-					var btnWrap;
-					var html = ['<button type="button" class="btn btn-default start-shell">start</button>',
-						'<button type="button" class="btn btn-default stop-shell">stop</button>'
-					].join('');
-					// 如果当前支持命令,并且当前面板已经被创建了
-					if (status && current.length) {
-						// 如果当前没有置入2个按钮
-						// 调用命令置入按钮
-						btnWrap = current.find('.branch-btn-wrap');
-						if (!btnWrap.find('.start-shell').length) {
-							btnWrap.prepend(html);
-						}
-					}
-				});
-		},
-		// 检测是否有run.config.js中的start这个命令
-		checkCommand: function(groupName, branchName) {
-			var d = $.Deferred();
-			$.post(baseUrl + "/sys/is_have_shell_control.html", {
-				groupName: groupName,
-				branchName: branchName
-			})
-			.always(function(txt) {
-				if (txt === "1" || txt === "0") {
-					d.resolve(txt === "1" ? true : false);
-				} else {
-					manager.wrongToast();
-				}
-			});
-			return d;
-		},
-		/**
-		 * 在点击应用的时候检测所有分支的 状态哪个的状态发生了变话，就去调用 
-		 * 启动或停止这个分支下的run.config.js的命令，如果命令已经被调用，则掉了没有反映，
-		 * 如果命令已经停止，调用停止也没有用，如果没有命令（即没有run.config.js），则调用不生效
-		 * run.config.js应该配置在项目的根目录，并且配置的时候请配置项目的根目录
-		 *@param type 如果type为1就强制 只执行 启动命令，如果type为2则强制只执行停止命令 
-		 *  不传递 type则执行启动和停止命令
-		 */
-		saveCheckCommand: function(type) {
-			///////////////////////////////////////////////////////////////////////保存时候如果跟路径发生变换也需要处理/////////////////////////////////////////
-			var myCache = {}, keys;
-			var host = manager.cache.setData.host || [];
-			var oldHost = JSON.parse(manager.cache.strSetData).host || [];
-			host.forEach(function(group) {
-				if (group.branches && group.branches.length) {
-					group.branches.forEach(function(branch) {
-						myCache[group.groupName + "_" + branch.branchName] = group.disabled ? true : (branch.disabled ? true : false);
-					});
-				}
-			});
-			oldHost.forEach(function(group) {
-				if (group.branches && group.branches.length) {
-					group.branches.forEach(function(branch) {
-						var status = group.disabled ? true : (branch.disabled ? true : false);
-						var key = group.groupName + "_" + branch.branchName;
-						var commandConfig;
-						if (myCache[key] !== undefined) {
-							// 状态发送变换
-							if (myCache[key] !== status) {
-								commandConfig = {
-									type: myCache[key] ? 2 : 1,
-									branchName: branch.branchName,
-									groupName: group.groupName
-								};
-							}
-						} else {
-							commandConfig = {
-								type: 2,
-								branchName: branch.branchName,
-								groupName: group.groupName
-							};
-						}
-						if (commandConfig) {
-							// 只发送启动命令
-							if (type === 1) {
-								if (commandConfig.type !== 1) {
-									commandConfig = null;
-								}
-							// 只发送停止命令
-							} else if (type === 2) {
-								if (commandConfig.type !== 2) {
-									commandConfig = null;
-								}
-							}
-							if (commandConfig) {
-								manager.sendCommand(commandConfig, false)
-								.then(function(result) {
-									var status = result.status;
-									// 挑选一些状态提示，其他状态不提示
-									if (status === 1 || status === 2) {
-										manager.toast(result.message);
-									}
-									if (status === 21 || status === 11 || status === 14) {
-										manager.wrongToast(result.message);
-									}
-								});
-							}
-						}
-						delete myCache[key];
-					});
-				}
-			});
-			for(var key in myCache) {
-				if (type === 1 || type === undefined) {
-					// 这里只能是开始运行命令
-					if (!myCache[key]) {
-						keys = key.split("_");
-						manager.sendCommand({
-							type: 1,
-							branchName: keys[1],
-							groupName: keys[0]
-						}, false)
-						.then(function(result) {
-							var status = result.status;
-							// 挑选一些状态提示，其他状态不提示
-							if (status === 1 || status === 2) {
-								manager.toast(result.message);
-							}
-							if (status === 21 || status === 11 || status === 14) {
-								manager.wrongToast(result.message);
-							}
-						});
-					}
-				}
-			}
-		},
 		// 保存
 		initSave: function() {
 			var save = $('.save').click(function(e) {
 				//先将当前面版中的数据更新到setData中去
 				manager.setPanelData();
-				var strData = JSON.stringify(manager.cache.setData);
-				var oldstrData = manager.cache.strSetData;
-				// 如果数据完全一样，就证明根本没有改配置
-				if (strData === oldstrData) {
-					return;
-				}
-				$.post(baseUrl + '/sys/set_config_ajax.html', {
-					data: strData
-				}).then(function(status) {
-					status = +status;
-					if (status === 1) {
-						manager.cache.panelEle
-						.find('.form-wrap[data-branch-name][data-group-name]')
-						.each(function() {
-							var me = $(this),
-								groupName = me.attr('data-group-name'),
-								branchName = me.attr('data-branch-name');
-							if (groupName && branchName) {
-								// 检测当前分支的btn是否更新
-								manager.setCommandBtn(groupName, branchName);
-							}
-						});
-						manager.saveCheckCommand();
-						// 更新缓存数据
-						manager.cache.strSetData = strData;
-						manager.alertTip("服务器配置更新成功", 500);
-					} else {
-						manager.wrongToast("服务器配置失败");
-					}
-				}, function() {
-					manager.wrongToast("系统忙，请稍后在试试");
-				});
+				manager.configModel.save();
 			});
 			$(document).on('keydown', function(e) {
 				if (e.ctrlKey && +e.keyCode === 83) {
@@ -882,44 +593,16 @@
 				}
 			});
 			return this;
-		},
-		/**
-		 *  打开一个提示
-		 * @param type {number}弹窗类型 1表示成功 0表示警告
-		 * @param msg 消息内容，可以是html字符传
-		 * @param closeTime {number} 不传递或者 值为0就表示不关闭一直提示
-		 */
-		alertTip: function(type, msg, closeTime) {
-			var tpl = '<div class="fade in alert alert-<%=data.type%> tip"><%=data.msg%></div>';
-			var html, ele;
-			closeTime = +closeTime;
-			if (typeof type === "string") {
-				closeTime = msg;
-				msg = type;
-				type  = 1;
-			}
-			html = $.template(tpl, {
-				type: type == 1 ? "success" : "warning",
-				msg: msg
-			});
-			ele = $(html).appendTo($('.tipArea')).alert();
-			if (closeTime) {
-				window.setTimeout(function() {
-					ele.alert("close");
-				}, closeTime);
-			}
-		},
-		toast: function(type, msg) {
-			if (typeof type === "string") {
-				msg = type;
-				type  = 1;
-			}			
-			this.alertTip(type, msg, 5000);
-		},
-		wrongToast: function(msg) {
-			this.toast(0, msg || "系统忙，请稍后在试试");
 		}
 	};
-	manager.init();
-	window.manager = manager;
-})(jQuery);
+	//修改滚动条
+
+
+	// 得到后端数据后开始初始化
+	setData.then(function(configModel) {
+		manager.init(configModel);
+		// 加载通知模块
+		require(["js/notifiy"]);
+		return configModel;
+	});
+});

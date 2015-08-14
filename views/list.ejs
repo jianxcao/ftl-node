@@ -1,14 +1,16 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-  <meta charset="utf-8"/>
-  <link rel="shortcut icon" href="<%=cdnBaseUrl%>/favicon.ico"/>
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-  <meta name="viewport" content="width=device-width, target-densitydpi=high-dpi, initial-scale=1.0, maximum-scale=1.0, user-scalable=no,minimal-ui" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta content="telephone=no" name="format-detection" />
-  <link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/css/list.css">
+    <meta charset="utf-8"/>
+    <link rel="shortcut icon" href="<%=cdnBaseUrl%>/favicon.ico"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="viewport" content="width=device-width, target-densitydpi=high-dpi, initial-scale=1.0, maximum-scale=1.0, user-scalable=no,minimal-ui" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta content="telephone=no" name="format-detection" />
+    <link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/css/base.css">
+    <link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/lib/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/css/list.css">
 </head>
 <body>
  <table>
@@ -24,7 +26,7 @@
     <% var myUrl = /.*\/$/.test(url) ? url : url + "/";%>
     <% data.forEach(function(oneData) {%>
       <tr>
-        <td><a href="<%=myUrl%><%=oneData.name%>"><strong><%=oneData.name%></strong></a></td>
+        <td><a href="<%=myUrl%><%=oneData.name%>"><%if (oneData.isDirectory) {%><span class="glyphicon glyphicon-folder-close"></span>&nbsp;&nbsp;<%}%><strong><%=oneData.name%></strong></a></td>
         <td><a href="<%=myUrl%><%=oneData.name%>"><%=oneData.size%></a></td>
         <td><a href="<%=myUrl%><%=oneData.name%>"><%=oneData.mtime.getFullYear()%>年<%=oneData.mtime.getMonth() + 1%>月<%=oneData.mtime.getDate()%>日<%=oneData.mtime.getHours()%>时<%=oneData.mtime.getMinutes()%>分<%=oneData.mtime.getSeconds()%>秒</a></td>
       </tr>
@@ -33,7 +35,7 @@
   </tbody>
 </table>
 <script type="text/javascript">
-  window.listData = <%-JSON.stringify(data)%>
+  window.listData = <%-JSON.stringify(data)%>;
 </script>
 <script type="text/javascript" src="<%=cdnBaseUrl%>/lib/jquery.js"></script>
 <script type="text/javascript" src="<%=cdnBaseUrl%>/lib/tpl.js"></script>

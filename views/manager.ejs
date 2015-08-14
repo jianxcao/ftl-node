@@ -1,3 +1,4 @@
+
 <!DOCTYPE HTML>
 <html>
 <head>
@@ -10,8 +11,10 @@
 	<meta content="telephone=no" name="format-detection" />
 	<title>后台管理</title>
 	<link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/css/base.css">
-	<link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/lib/bootstrap/css/bootstrap.css">
+	<link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/lib/bootstrap/css/bootstrap.min.css">
 	<link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/css/manager.css">
+	<link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/css/console.css">
+	<link rel="stylesheet" type="text/css" href="<%=cdnBaseUrl%>/lib/scrollBar/scrollBar.css">
 </head>
 <body>
 <nav class="navbar navbar-default" role="navigation">
@@ -116,19 +119,35 @@
 		</div>
 	</div>
 </div>
-<section class="tipArea">
-	
-</section>
 
-<script type="text/javascript">
-	window.cdnBaseUrl = '<%=cdnBaseUrl%>';
-	window.baseUrl = '<%=baseUrl%>';
-</script>
+<script type="text/javascript" src="<%=cdnBaseUrl%>/lib/requirejs/require.js"></script>
 <script type="text/javascript" src="<%=cdnBaseUrl%>/lib/jquery.js"></script>
-<script type="text/javascript" src="<%=cdnBaseUrl%>/lib/bootstrap/js/bootstrap.js"></script>
-<script type="text/javascript" src="<%=cdnBaseUrl%>/lib/Sortable.js"></script>
-<script type="text/javascript" src="<%=cdnBaseUrl%>/lib/tpl.js"></script>
-<script type="text/javascript" src="<%=cdnBaseUrl%>/js/notifiy.js"></script>
-<script type="text/javascript" src="<%=cdnBaseUrl%>/js/manager.js"></script>
+<script type="text/javascript">
+	define("config", [], function() {
+		return {
+			cdnBaseUrl: '<%=cdnBaseUrl%>',
+			baseUrl: '<%=baseUrl%>'
+		};
+	});
+	require.config({
+		baseUrl: '<%=cdnBaseUrl%>',
+		paths: {
+			jquery: "lib/jquery",
+			tpl: "lib/tpl",
+			bootstrap: "lib/bootstrap/js/bootstrap.min"
+		},
+		shim: {
+			jquery: {
+				deps: [],
+				exports: "jquery"
+			},
+			tpl:{
+				exports: "jQuery.template"
+			}
+		}
+	});
+	require(["js/manager"]);
+</script>
+
 </body>
 </html>

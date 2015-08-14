@@ -120,20 +120,3 @@ header{
 	text-align: center;
 	z-index: 999;
 }
-.messageArea {
-    position: absolute;
-    background:#2b2b2b;
-    width: 100%;
-    bottom: 0;
-    height: 300px;
-    overflow: scroll;
-    padding-left: 10px;
-}
-.messageArea .err {
-    color: #c12e2a;
-    line-height: 1.5;
-}
-.messageArea .info {
-    color: #22ac38;
-    line-height: 1.5;
-}

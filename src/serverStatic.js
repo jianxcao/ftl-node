@@ -20,7 +20,7 @@ exports = module.exports = function serveStatic() {
 	}
 	var url  = parseurl(req);
 	var port = req.app.get("port");
-	var fullUrl = req.protocol + '://' + req.get('host') + ( port == 80 || port == 443 ? '' : ':'+ port ) + req.path;
+	var fullUrl = req.protocol + '://' + req.get('host') + req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
 	var ext = path.extname(pathname).replace('.', "");
