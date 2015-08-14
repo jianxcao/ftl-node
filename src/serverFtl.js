@@ -109,6 +109,7 @@ var parseInclude = function(fullPath, tmpFilePaths) {
 	var newFileContent = null;
 	try{
 		var reg = /(<#--\s*){0,1}(?:<#){0,1}(include|import|mock)\s+(?:"|')([^"'\s]+)(?:"|')(?:\s+as\s+([^\s>]+)){0,1}\s*(?:>){0,1}(\s*-->){0,1}/g;
+		var bian = /^\$\{.*\}$/;
 		var one;
 		var command;
 		var currentPath;
@@ -119,10 +120,10 @@ var parseInclude = function(fullPath, tmpFilePaths) {
 		});
 		newFileContent = fileContent;
 		while ((one = reg.exec(fileContent)) !== null) {
-			console.log(one);
 			command = one[2];
 			currentPath = one[3];
-			if (command && currentPath) {
+			//存在路径和命令，并且路径不是写死的
+			if (command && currentPath && !bian.test(currentPath)) {
 				//import和include指令代表要引入ftl
 				if (command === "import" || command === "include") {
 					//如果 import和include指令是注释的就不解析
@@ -320,27 +321,24 @@ var parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 	cmd = spawn('java', ["-jar", jarFilePath, option, data]);
 	stdout = cmd.stdout;
 	stderr = cmd.stderr;
-	return new Promise(function(resove) {
-		var rightData = "";
-		stdout.on('data', function(chunk) {
-			rightData += chunk.toString();
-		})
-		.on('end', function() {
-			resove(rightData);
-		});
-	})
-	.then(function(rightData) {
-		return new Promise(function(resolve) {
-			var wrongData = "";
-			stderr.on("data", function(chunk) {
-				wrongData += iconv.decode(chunk, 'GBK');
-			}).on('end', function() {
-				resolve({
-					rightData: rightData,
-					wrongData: wrongData
+	Promise.props({
+	    rightData: new Promise(function(resolve) {
+				var rightData = "";
+				stdout.on('data', function(chunk) {
+					rightData += chunk.toString();
+				})
+				.on('end', function() {
+					resolve(rightData);
 				});
-			});
-		});
+			}),
+	    wrongData: new Promise(function(resolve) {
+				var wrongData = "";
+				stderr.on("data", function(chunk) {
+					wrongData += iconv.decode(chunk, 'GBK');
+				}).on('end', function() {
+					resolve(wrongData);
+				});
+			})
 	})
 	.then(function(data) {
 		if (data.rightData) {
