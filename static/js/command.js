@@ -88,7 +88,7 @@ define(["js/infoTip", "config"], function(infoTip, config) {
 		 * 启动或停止这个分支下的run.config.js的命令，如果命令已经被调用，则掉了没有反映，
 		 * 如果命令已经停止，调用停止也没有用，如果没有命令（即没有run.config.js），则调用不生效
 		 * run.config.js应该配置在项目的根目录，并且配置的时候请配置项目的根目录
-		 *@param type 如果type为1就强制 只执行 启动命令，如果type为2则强制只执行停止命令 
+		 *@param type 如果type为1就只执行 启动命令，如果type为2则只执行停止命令 
 		 *  不传递 type则执行启动和停止命令
 		 */
 		saveCheckCommand: function(type) {
@@ -99,79 +99,85 @@ define(["js/infoTip", "config"], function(infoTip, config) {
 				// 挑选一些状态提示，其他状态不提示
 				if (status === 1 || status === 2) {
 					infoTip.toast(result.message);
+					return true;
 				}
 				if (status === 21 || status === 11 || status === 14) {
 					infoTip.wrongToast(result.message);
 				}
 			};
-			////////////////////保存时候如果跟路径发生变换也需要处理////////////////////
+			type = +type;
 			return setData.then(function(result) {
 				var myCache = {},
 					keys;
 				var host = result.data.host || [];
 				var oldHost = JSON.parse(result.oldData || "{}").host || [];
-				host.forEach(function(group) {
-					if (group.branches && group.branches.length) {
-						group.branches.forEach(function(branch) {
-							myCache[group.groupName + "_" + branch.branchName] = group.disabled ? true : (branch.disabled ? true : false);
-						});
-					}
-				});
-				oldHost.forEach(function(group) {
-					if (group.branches && group.branches.length) {
-						group.branches.forEach(function(branch) {
-							var status = group.disabled ? true : (branch.disabled ? true : false);
-							var key = group.groupName + "_" + branch.branchName;
-							var commandConfig;
-							if (myCache[key] !== undefined) {
-								// 状态发送变换
-								if (myCache[key] !== status) {
-									commandConfig = {
-										type: myCache[key] ? 2 : 1,
+				var commandConfigs = [];
+				if (type === 1 || type === 2) {
+					host.forEach(function(group) {
+						if (group.branches && group.branches.length) {
+							group.branches.forEach(function(branch) {
+								var disabled = group.disabled ? 2 : (branch.disabled ? 2 : 1);
+								if (type === disabled) {
+									commandConfigs.push({
+										type: type,
 										branchName: branch.branchName,
 										groupName: group.groupName
-									};
+									});
 								}
-							} else {
-								commandConfig = {
-									type: 2,
+							});
+						}
+					});
+				} else {
+					host.forEach(function(group) {
+						if (group.branches && group.branches.length) {
+							group.branches.forEach(function(branch) {
+								myCache[group.groupName + "_" + branch.branchName] = group.disabled ? true : (branch.disabled ? true : false);
+							});
+						}
+					});
+					oldHost.forEach(function(group) {
+						if (group.branches && group.branches.length) {
+							group.branches.forEach(function(branch) {
+								var status = group.disabled ? true : (branch.disabled ? true : false);
+								var key = group.groupName + "_" + branch.branchName;
+								var commandConfig = {
 									branchName: branch.branchName,
 									groupName: group.groupName
 								};
-							}
-							if (commandConfig) {
-								// 只发送启动命令
-								if (type === 1) {
-									if (commandConfig.type !== 1) {
-										commandConfig = null;
+								if (myCache[key] !== undefined) {
+									// 状态发送变换
+									if (myCache[key] !== status) {
+										commandConfig.type = myCache[key] ? 2 : 1;
 									}
-									// 只发送停止命令
-								} else if (type === 2) {
-									if (commandConfig.type !== 2) {
-										commandConfig = null;
+								} else {
+									commandConfig.type = 2;
+								}
+								if (commandConfig.type) {
+									if (commandConfig) {
+										commandConfigs.push(commandConfig);
 									}
 								}
-								if (commandConfig) {
-									com.sendCommand(commandConfig, false)
-										.then(al);
-								}
-							}
-							delete myCache[key];
-						});
-					}
-				});
-				for (var key in myCache) {
-					if (type === 1 || type === undefined) {
+								delete myCache[key];
+							});
+						}
+					});
+					for (var key in myCache) {
 						// 这里只能是开始运行命令
 						if (!myCache[key]) {
 							keys = key.split("_");
-							com.sendCommand({
+							commandConfigs.push({
 								type: 1,
 								branchName: keys[1],
 								groupName: keys[0]
-							}, false).then(al);
+							});
 						}
 					}
+				}
+				if (commandConfigs && commandConfigs.length) {
+					commandConfigs.forEach(function(commandConfig) {
+						com.sendCommand(commandConfig, false)
+							.then(al);
+					});
 				}
 			});
 		}

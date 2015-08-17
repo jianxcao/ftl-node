@@ -34,11 +34,13 @@ app.all(["/sys/get_config_ajax.html", "/sys/get_config_ajax"], function(req, res
 app.post(['/sys/shell_control.html', '/sys/shell_control'], function(req, res, next) {
 	/*stats解析 0表示系统错误
 	*1开头表示 启动命令的结果
+	* 1: 运行成功
 	* 11: 运行命令出错
 	* 12: 命令已经在运行中
 	* 13: 没有配置文件
 	* 14: 配置文件解析出错
 	*2开头表示 结束命令的结果
+	* 2停止命令运行成功
 	* 21 停止命令出错
 	* 22 表示当前么有这个命令
 	**/

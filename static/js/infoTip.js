@@ -36,7 +36,7 @@ define(["jquery", "tpl"], function($) {
 				msg = type;
 				type = 1;
 			}
-			this.alertTip(type, msg, 5000);
+			this.alertTip(type, msg, 3000);
 		},
 		wrongToast: function(msg) {
 			this.toast(0, msg || "系统忙，请稍后在试试");

@@ -95,6 +95,7 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 						result.data = {};
 					}
 				}
+				result.oldData = JSON.stringify(result.data);
 				def.resolve(result);
 			}
 		});

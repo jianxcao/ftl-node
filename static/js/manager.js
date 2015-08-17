@@ -595,9 +595,6 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 			return this;
 		}
 	};
-	//修改滚动条
-
-
 	// 得到后端数据后开始初始化
 	setData.then(function(configModel) {
 		manager.init(configModel);
