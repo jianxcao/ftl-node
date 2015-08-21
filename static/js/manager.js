@@ -4,9 +4,12 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 		cache: {},
 		init: function(configModel) {
 			this.configModel = configModel;
+			var data = configModel.data;
 			manager.cache.panelEle = $('.content-col');
 			manager.cache.sidebarEle = $('.sidebar');
-			command.saveCheckCommand(1);
+			if(data.runCmd) {
+				command.saveCheckCommand(1);
+			}
 			manager.initDefaultData()
 			.then(function() {
 				manager.initSideNav();

@@ -27,7 +27,7 @@ innerPath = innerPath.replace(/^\/|\/$/, "");
 innerPath = "/" + innerPath;
 
 // 初始化配置
-var port;
+var port, runCmd;
 // 设置全局的 cdnurl
 app.locals.baseUrl = innerPath;
 subApp.locals.baseUrl = innerPath;
@@ -39,11 +39,23 @@ app.use(bodyParser.urlencoded({ extended: false }));
 if (commandConfig.port) {
 	port = commandConfig.port;
 	config.set('port', port);
-	config.save();
 } else {
 	// 通过配置文件获取端口
 	port = config.get("port") || 80;
 }
+runCmd = config.get('runCmd');
+if (commandConfig.runCmd === true) {
+	runCmd = true;
+} else if (commandConfig.runCmd === false){
+	runCmd = false;
+}
+if (runCmd === undefined || runCmd === null) {
+	runCmd = true;
+}
+config.set('runCmd', runCmd);
+
+// 保存配置
+config.save();
 
 app.disable('x-powered-by');
 // 设置模版

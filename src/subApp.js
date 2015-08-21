@@ -163,7 +163,7 @@ app.all(['/sys/is_have_shell_control.html', '/sys/is_have_shell_control'], funct
 });
 
 app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], function(req, res) {
-	var data, keys = ["port", "host", "autoResponder"], setData = {}, status = false;
+	var data, keys = ["port", "host", "autoResponder", "runCmd"], setData = {}, status = false;
 	try{
 		if (req.body && req.body.data) {
 			data = req.body.data;

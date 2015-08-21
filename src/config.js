@@ -44,7 +44,7 @@ exports.get = function(key) {
 	} else {
 		key = key.split(':');
 		for(var i = 0; i < key.length; i++) {
-			if (tmp[key[i]]) {
+			if (tmp[key[i]] !== undefined) {
 				tmp = tmp[key[i]];
 			} else  {
 				return null;

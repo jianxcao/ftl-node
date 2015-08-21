@@ -3,7 +3,7 @@
 define(["jquery", "js/console"], function($, myConsole) {
 	var notifiy = {
 		init: function() {
-			var host = window.document.location.host.replace(/:.*/, '');
+			var host = window.document.location.host;
 			var ws = new WebSocket('ws://' + host);
 			this.ws = ws;
 			this.initEvent();

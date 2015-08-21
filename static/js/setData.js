@@ -44,7 +44,8 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 			return retVal;
 		},
 		save: function() {
-			var strData = JSON.stringify(this.data);
+			var data = this.data;
+			var strData = JSON.stringify(data);
 			var oldstrData = this.oldData;
 			var com = this;
 			// 如果数据完全一样，就证明根本没有改配置
@@ -66,7 +67,9 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 							command.setCommandBtn(groupName, branchName);
 						}
 					});
-					command.saveCheckCommand();
+					if (data.runCmd) {
+						command.saveCheckCommand();
+					}
 					// 更新缓存数据
 					com.oldData = strData;
 					infoTip.alertTip("服务器配置更新成功", 500);
