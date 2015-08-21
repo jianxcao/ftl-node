@@ -23,6 +23,10 @@ var bodyParser = require('body-parser'),
 	// subApp即内部系统应用的path
 	innerPath = '/___mySystemInner',
 	child_process = require('child_process');
+
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
+
 innerPath = innerPath.replace(/^\/|\/$/, "");
 innerPath = "/" + innerPath;
 
@@ -33,6 +37,14 @@ app.locals.baseUrl = innerPath;
 subApp.locals.baseUrl = innerPath;
 app.locals.cdnBaseUrl =  innerPath + "/static";
 subApp.locals.cdnBaseUrl =  innerPath + "/static";
+
+app.use(cookieParser());
+
+app.use(session({
+	secret: 'ftl-node-test-c',
+	resave: false,
+	saveUninitialized: false
+}));
 
 // 解析参数
 app.use(bodyParser.urlencoded({ extended: false }));

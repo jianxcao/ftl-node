@@ -30,8 +30,8 @@ module.exports = find = function(groupName, branchName) {
 					if (config) {
 						config.rootPath =  path.dirname(p);
 						config.fullPath = p;
-						log.debug("配置文件dirname:" + config.rootPath);
-						log.debug("配置文件路径:" + config.fullPath);
+						// log.debug("配置文件dirname:" + config.rootPath);
+						// log.debug("配置文件路径:" + config.fullPath);
 					}
 					return config;
 				} catch(err) {

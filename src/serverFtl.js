@@ -51,7 +51,7 @@ exports = module.exports = function serveFtl(port) {
 				getFtlData()
 				// 解析里面所有的include，模拟出假数据
 				.then(function(data) {
-					pathObject.newFullPath = parseInclude(fullPath, tmpFilePaths);
+					pathObject.newFullPath = parseInclude(fullPath, tmpFilePaths, req, res);
 					var newPath = pathObject.newFullPath.replace(pathObject.basePath, "");
 					pathObject.newPath = newPath;
 					return data;
@@ -98,7 +98,7 @@ var getFtlData = function() {
  * <#mock "../dhxy2013/inc/baseModule.js">
  * @fullPath String ftl全路径
  * **/
-var parseInclude = function(fullPath, tmpFilePaths) {
+var parseInclude = function(fullPath, tmpFilePaths, req, res) {
 	if (!tmpFilePaths ) {
 		tmpFilePaths = [];
 	}
@@ -129,7 +129,7 @@ var parseInclude = function(fullPath, tmpFilePaths) {
 					//如果 import和include指令是注释的就不解析
 					if (!one[1]) {
 						currentAbsolutePath = path.resolve(dirname, currentPath);
-						var includePath = parseInclude(currentAbsolutePath, tmpFilePaths);
+						var includePath = parseInclude(currentAbsolutePath, tmpFilePaths, req, res);
 						//path发生变化，证明引入的ftl中有假数据
 						if (includePath !== currentAbsolutePath) {
 							//用生成的临时文件代替当前文件路径
@@ -140,7 +140,7 @@ var parseInclude = function(fullPath, tmpFilePaths) {
 					}
 				// 如果需要mock假数据就生成一个临时的文件，去替换当前的文件
 				} else if (command == "mock") {
-					var data = getOneModuleData(path.resolve(dirname, currentPath));
+					var data = getOneModuleData(path.resolve(dirname, currentPath), req, res);
 					var dataString = parseToFtlData(data);
 					newFileContent = newFileContent.replace(one[0], dataString);
 				}
@@ -239,7 +239,7 @@ var formatTime = function(timeNum, fmt) {
 	return fmt;
 };
 //获取引入的假数据
-var getOneModuleData = function(fullPath) {
+var getOneModuleData = function(fullPath, req, res) {
 	var data = {};
 	try{
 		//如果当前模块存在就删除当前模块的缓存
@@ -248,7 +248,7 @@ var getOneModuleData = function(fullPath) {
 		}
 		var my = require(fullPath);
 		if (typeof my === 'function') {
-			my = my();
+			my = my(req, res);
 		}
 		if (typeof my === "object") {
 			data = my;
