@@ -17,69 +17,52 @@ exports = module.exports = function serveStatic() {
 	var fullUrl = req.protocol + '://' + req.get("host") + req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
-	var ext = path.extname(pathname).replace('.', "");
 	var absPath, headers;
-	ext = ext.toLowerCase();
-	// 没有ext证明是个路径，而不是个文件
-	if (!ext) {
-		try{
-			pathObject = parsePath(fullUrl);
-			if (pathObject && pathObject.fullPath) {
-				absPath = pathObject.fullPath;
-				// log.debug(absPath, 'absPath');
-				// 第一步去读取文件类型
-				new Promise(function(resolve, reject) {
-					fs.lstat(absPath, function(err, status) {
-						if (err) {
-							reject(err);
-						} else {
-							if (status.isDirectory()) {
-								resolve();
-							} else {
-								reject("当前文件类型不是一个目录");
-							}
-						}
-					});
-				// 第一步成功后，第二部去读取目录下的所有文件的文件名称
-				}).then(function() {
-					return new Promise(function(resolve, reject) {
-						fs.readdir(absPath, function(err, files) {
-							if (err) {
-								reject(err);
-							} else {
-								resolve(files);
-								// log.debug(files);
-							}
-						});
-					});
-				// 第三部根据文件名循环遍历得到文件信息
-				}).then(function(files) {
-					return getFileInfo(files, absPath);
-				// 第四部渲染页面
-				}).then(function(filesInfo){
-					res.set('Full-Path', absPath);
-					res.render("list", {
-						url: req.url,
-						data: filesInfo
-					});
-				}).catch(function(e){// 出错，直接抛出到页面
-					if (typeof (e) == "string") {
-						e = new Error(e);
-					}
-					log.error(e);
-					next(e);
-				});
-			} else {
-				res.status(404);
-				res.render("404", {
-					message: '没有找到对应的路径,请查看server.json配置文件,当前文件相对路径' +  pathname
-				});
+	try{
+		pathObject = parsePath(fullUrl);
+		if (pathObject && pathObject.fullPath) {
+			absPath = pathObject.fullPath;
+			var status = fs.lstatSync(absPath);
+			if (!status.isDirectory()) {
+				next();
+				return;
 			}
-		}catch(e) {
-			next(e);
+			// 第一步读取目录下的所有文件的文件名称
+			new Promise(function(resolve, reject) {
+				fs.readdir(absPath, function(err, files) {
+					if (err) {
+						reject(err);
+					} else {
+						resolve(files);
+						// log.debug(files);
+					}
+				});
+			})
+			// 第三部根据文件名循环遍历得到文件信息
+			.then(function(files) {
+				return getFileInfo(files, absPath);
+			// 第四部渲染页面
+			}).then(function(filesInfo){
+				res.set('Full-Path', absPath);
+				res.render("list", {
+					url: req.url,
+					data: filesInfo
+				});
+			}).catch(function(e){// 出错，直接抛出到页面
+				if (typeof (e) == "string") {
+					e = new Error(e);
+				}
+				log.error(e);
+				next(e);
+			});
+		} else {
+			res.status(404);
+			res.render("404", {
+				message: '没有找到对应的路径,请查看server.json配置文件,当前文件相对路径' +  pathname
+			});
 		}
-	} else {
-		next();
+	}catch(e) {
+		next(e);
 	}
   };
 };
