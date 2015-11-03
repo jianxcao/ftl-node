@@ -7,7 +7,7 @@ var express = require('express'),
 	notifiy = require('./src/notifiy')(server);
 
 //将通知类放到 app中
-app.set('notifiy', notifiy);
+app.set('notifiy', notifiy); 
 
 //将通知放到全局对象中
 global.notifiy = notifiy;
