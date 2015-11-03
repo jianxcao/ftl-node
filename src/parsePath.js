@@ -94,8 +94,13 @@ var parseBranch = function(branch, url, groupName) {
 			exists = fs.existsSync(p);
 			if (exists) {
 				return {
+					//ftl全路径
 					fullPath: p,
+					//用户设置的基础路径
+					userBasePath: basePath,
+					//当前ftl文件的基础路径
 					basePath: codePath,
+					//ftl相对路径
 					path: changePathname,
 					groupName: groupName,
 					branchName: branch.branchName

@@ -7,11 +7,11 @@ module = module.exports = function(server) {
 		log.info('有服务器连接到socket');
 		clients[getGuid()] = ws;
 		//ws.on('message', function(data, flags) {
-		//	log.info(data, flags);
+		//	log.debug(data, flags);
 		//});
 		ws.on('close', function() {
 			close();
-			log.info(clients);
+			log.debug(clients);
 			log.info('socket服务器关闭');
 		});
 		ws.on('error', function(err) {

@@ -15,6 +15,8 @@ var Promise = require('bluebird');
 var iconv = require('iconv-lite');
 var merge = require('utils-merge');
 var fse = require('fs-extra');
+var getProjectConfig = require('../src/getProjectConfig');
+var setJarFile = require('../src/setJarFile');
 var consoleErrors = [];
 exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
@@ -29,12 +31,19 @@ exports = module.exports = function serveFtl(port) {
 	var fullPath, pathObject;
 	var webPort = port;
 	var tmpFilePaths;
+	var commandConfig, jarVersion = "";
 	//  需要在控制台输出的错误
 	//其内的每个元素是一个 object，object包括  message属性和 stack属性
 	ext = ext.toLowerCase();
 	if (ext && ext == "ftl") {
 		try{
 			pathObject = parsePath(fullUrl);
+			commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
+			jarVersion = "";
+			if (commandConfig && commandConfig.jarVersion) {
+				jarVersion = commandConfig.jarVersion;
+			}
+			setJarFile(jarVersion);
 			if (pathObject) {
 				//	回收生成的临时文件
 				req.on('close', function () {

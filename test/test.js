@@ -10,9 +10,6 @@ var path = require('path');
 //    console.log(a, b);
 // })
 
+var mycmd = require('../src/parseCommand');
 
-
-var shell = require('nshell');
-shell.on("command", function(e) {
-    console.log(e);
-});
+console.log(mycmd);
