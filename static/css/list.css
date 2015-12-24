@@ -82,6 +82,10 @@ td:last-child {
   box-shadow: inset -1px 0 0 #fff;
 } 
 
+td > a {
+  display: block;
+}
+
 tr {
   background: url(../image/2.png);  
 }
