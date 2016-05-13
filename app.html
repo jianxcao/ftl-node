@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ftl-node</title>
+  </head>
+  <body>
+  	<script>
+      // Get the current window
+  		var app = require("./index.js");
+  		app({}, function(url) {
+        // Create a new window and get it
+        window.location.replace(url);
+  		});
+  	</script>
+  </body>
+</html>

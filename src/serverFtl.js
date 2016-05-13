@@ -9,6 +9,7 @@ var path = require('path');
 var log = require('../src/log');
 var fs = require('fs');
 var parsePath = require('../src/parsePath');
+var RcFinder = require('rcfinder');
 var jarFilePath = path.join(__dirname, "../lib/jar/ftl.jar");
 var spawn = require('child_process').spawn;
 var Promise = require('bluebird');
@@ -18,6 +19,18 @@ var fse = require('fs-extra');
 var getProjectConfig = require('../src/getProjectConfig');
 var setJarFile = require('../src/setJarFile');
 var consoleErrors = [];
+ debugger;
+// 重新设置jrePath--从当前路径向上找，找到了jre目录，并且jre目录下有 bin/java.exe就认为是个合法的jre
+rcFinder = new RcFinder('jre', {
+	loader: function(p) {
+		p = path.join(p, "bin/java.exe");
+		if (fs.existsSync(p)) {
+			return p;
+		}
+	}
+});
+jrePath = rcFinder.find("./") || 'java';
+
 exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
 	//  重置错误提示
@@ -327,7 +340,7 @@ var parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 		path: ftlPath
 	}, option);
 	option = JSON.stringify(option);
-	cmd = spawn('java', ["-jar", jarFilePath, option, data]);
+	cmd = spawn(jrePath, ["-jar", jarFilePath, option, data]);
 	stdout = cmd.stdout;
 	stderr = cmd.stderr;
 	Promise.props({

@@ -42,8 +42,8 @@ ${request.getScheme()}
 
 ## 注意事项
 1. 环境依赖于nodejs,最低版本0.12
-3. 环境依赖java的jdk或者jre
-2. 配置将记录于系统缓存文件中，请确保运行时有对系统缓存目录修改的权限,并注意如果缓存目录清除，将会删除配置文件
+2. 环境依赖java的jdk1.7或者jre1.7
+3. 配置将记录于系统缓存文件中，请确保运行时有对系统缓存目录修改的权限,并注意如果缓存目录清除，将会删除配置文件
 
 ## 其他
 [帮助页面](https://github.com/jianxcao/ftl-node/blob/master/static/help.md)

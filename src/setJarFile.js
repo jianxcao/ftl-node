@@ -44,7 +44,6 @@ var setJarFile = function(version) {
 	if (!result || !result.versions) {
 		throw new Error(" 读取jar默认路径出错");
 	}
-	console.log(version);
 	var jarPath = "";
 	var versions = result.versions;
 	var currentVersion = "";
@@ -57,11 +56,9 @@ var setJarFile = function(version) {
 	}
 	//上面的规则没有找到jar，尝试version用作路径，看是否存在jar包路径
 	if (!currentVersion && version) {
-		console.log('in there')
 		//加入直接是一个文件路径
 		if (fs.existsSync(path.resolve(version))) {
 			jarPath = version;
-			console.log('ni mei a ', jarPath);
 			currentVersion = true;
 		}
 	}
