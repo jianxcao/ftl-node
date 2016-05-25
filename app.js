@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+var commandConfig = require('./src/parseCommand');
 var express = require('express'),
 	app = express(),
 	http = require('http'),
@@ -11,11 +12,9 @@ app.set('notifiy', notifiy);
 
 //将通知放到全局对象中
 global.notifiy = notifiy;
-
 var bodyParser = require('body-parser'),
 	serverStatic = require('./src/serverStatic'),
 	serverDir = require('./src/serverDir'),
-	commandConfig = require('./src/parseCommand'),
 	config = require('./src/config'),
 	serverFtl = require('./src/serverFtl'),
 	log = require('./src/log'),

@@ -1,7 +1,14 @@
 var program = require('commander');
-
+var	fs = require('fs');
+var pkg;
+var bufData = fs.readFileSync('./package.json');
+try {
+	pkg = JSON.parse(bufData);
+} catch (e) {
+	throw new Error('读取package.json文件出现错误');
+}
 program
-	.version('1.4.0')
+	.version(pkg.version)
 	.option('-p --port <port>', '定义端口', parseInt)
 	.option('-r --run-cmd <command>', "自动运行run.config.js中的start命令", /^(true|false)$/i)
 	.on('--help', function() {
