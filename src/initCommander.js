@@ -1,7 +1,8 @@
 var program = require('commander');
+var path  = require('path');
 var	fs = require('fs');
 var pkg;
-var bufData = fs.readFileSync('./package.json');
+var bufData = fs.readFileSync(path.resolve(__dirname, '../package.json'));
 try {
 	pkg = JSON.parse(bufData);
 } catch (e) {

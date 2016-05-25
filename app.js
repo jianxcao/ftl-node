@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var commandConfig = require('./src/parseCommand');
+var commandConfig = require('./src/initCommander');
 var express = require('express'),
 	app = express(),
 	http = require('http'),
