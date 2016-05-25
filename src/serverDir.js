@@ -83,18 +83,21 @@ var getFileInfo = function(files, basePath) {
 		} else {
 			return new Promise(function(resolve, reject) {
 				var one = files[index];
+				var nameTest = /^\.+/;
 				index = index + 1;
 				fs.lstat(path.resolve(basePath, one), function(err, status) {
 					// 当前目录如果读取错误，直接忽略
 					if (err) {
 						resolve(result);
 					} else {
-						result.push({
-							name: one,
-							size: status.size,
-							mtime: status.mtime,
-							isDirectory: status.isDirectory()
-						});
+						if (!nameTest.test(one)) {
+							result.push({
+								name: one,
+								size: status.size,
+								mtime: status.mtime,
+								isDirectory: status.isDirectory()
+							});
+						}
 						resolve(result);
 					}
 				});
