@@ -1,4 +1,5 @@
 define(["js/infoTip", "config"], function(infoTip, config) {
+	//命令接口，可以调用当前分组的命令
 	return {
 		// 发送执行run.config.js中的命令
 		/**

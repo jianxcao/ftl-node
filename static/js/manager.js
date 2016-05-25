@@ -22,11 +22,14 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 		// 右侧列表默认初始化
 		initDefaultData: function() {
 			var data = this.configModel.data;
-			if (!data.host) {
-				data.host = [];
+			var host = [];
+			if (data.host && data.host.length) {
+				host = data.host.slice(0);
 			}
+			//将折叠信息注入数组，当成一个属性
+			host.foldInfo = this.configModel.foldInfo;
 			// 初始化左侧菜单
-			return tplToHtml("/tpl/manager-menu.tpl", data.host)
+			return tplToHtml("/tpl/manager-menu.tpl", host)
 			.then(function(html) {
 				if (html) {
 					manager.cache.sidebarEle.append(html);
@@ -39,132 +42,138 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 				panelEle = this.cache.panelEle,
 				configModel = this.configModel;
 			// 展开收起
-			sidebarEle.delegate('dt', 'click', function(e) {
-					var me = $(this),
-						dd = me.next('dd'),
-						folderIcon = me.find('.folder-icon');
-					if (dd.hasClass('hidden')) {
-						dd.removeClass('hidden');
-						folderIcon.addClass('glyphicon-folder-open').removeClass('glyphicon-folder-close');
-					} else {
-						dd.addClass('hidden');
-						folderIcon.addClass('glyphicon-folder-close').removeClass('glyphicon-folder-open');
+			sidebarEle
+			.delegate('dt', 'click', function(e) {
+				var me = $(this),
+					dd = me.next('dd'),
+					groupName = me.attr('data-group-name'),
+					folderIcon = me.find('.folder-icon');
+				if (dd.hasClass('hidden')) {
+					configModel.setFoldInfo(groupName, false);
+					dd.removeClass('hidden');
+					folderIcon.addClass('glyphicon-folder-open').removeClass('glyphicon-folder-close');
+				} else {
+					dd.addClass('hidden');
+					configModel.setFoldInfo(groupName, true);
+					folderIcon.addClass('glyphicon-folder-close').removeClass('glyphicon-folder-open');
+				}
+				// 删除
+			})
+			.delegate('.del-icon', 'click', function(e) {
+				var me = $(this),
+					dd = me.closest('dd[data-fun]'),
+					dt = me.closest('dt'),
+					dl,
+					tmp, groupName, branchName,
+					host = configModel.data.host;
+				// 如果选择的是一个分支
+				if (dd.length) {
+					groupName = dd.parent().attr('data-group-name');
+					branchName = dd.attr('data-branch-name');
+					tmp = configModel.findBranch(groupName, branchName);
+					if (tmp) {
+						// 如果当前分支是激活的
+						panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']").remove();
+						dd.remove();
+						tmp.group.branches.splice(tmp.index, 1);
 					}
-					// 删除
-				})
-				.delegate('.del-icon', 'click', function(e) {
-					var me = $(this),
-						dd = me.closest('dd[data-fun]'),
-						dt = me.closest('dt'),
-						dl,
-						tmp, groupName, branchName,
-						host = configModel.data.host;
-					// 如果选择的是一个分支
-					if (dd.length) {
-						groupName = dd.parent().attr('data-group-name');
-						branchName = dd.attr('data-branch-name');
-						tmp = configModel.findBranch(groupName, branchName);
-						if (tmp) {
-							// 如果当前分支是激活的
-							panelEle.find(".form-wrap[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']").remove();
-							dd.remove();
-							tmp.group.branches.splice(tmp.index, 1);
+				}
+				//  如果选择的是一个分组，直接删除这个分组
+				if (dt.length) {
+					groupName = dt.attr('data-group-name');
+					tmp = configModel.findGroup(groupName);
+					if (tmp) {
+						dl = dt.closest('dl');
+						panelEle.find(".form-wrap[data-group-name='" + groupName + "']").remove();
+						dl.remove();
+						host.splice(tmp.index, 1);
+					}
+				}
+				return false;
+				// 禁止用
+			})
+			.delegate('.dis-icon', 'click', function(e) {
+				var me = $(this),
+					tmp, status;
+				var dd = me.closest('dd[data-fun]');
+				var dt = me.closest('dt');
+				var dl, activeDD;
+				var groupName, branchName;
+				// 如果选择的是一个分支
+				if (dd.length) {
+					// 找到dl元素
+					dl = dd.closest('dl[data-fun]');
+					groupName = dl.attr('data-group-name');
+					branchName = dd.attr('data-branch-name');
+					tmp = configModel.findBranch(groupName, branchName);
+					status = !dd.hasClass('disabled');
+					tmp.branch.disabled = status;
+					dd[status ? "addClass" : "removeClass"]('disabled');
+					if (tmp.branch.val && tmp.branch.val.length) {
+						tmp.branch.val.forEach(function(one) {
+							one.disabled = status;
+						});
+					}
+					panelEle.find('.form-wrap[data-group-name="' + groupName + '"][data-branch-name="' + branchName + '"]')
+						.find('.drag-wrap .form-group')[status ? "addClass" : "removeClass"]('disabled');
+					// 循环判断一个分组下的所有分支是否全部都是禁用的
+					status = true;
+					$.each(tmp.group.branches, function(inedx, one) {
+						if (!one.disabled) {
+							status = false;
+							return false;
 						}
+					});
+					if (tmp.group.disabled !== status) {
+						tmp.group.disabled = status;
+						dl[status ? "addClass" : "removeClass"]('disabled');
 					}
-					//  如果选择的是一个分组，直接删除这个分组
-					if (dt.length) {
-						groupName = dt.attr('data-group-name');
-						tmp = configModel.findGroup(groupName);
-						if (tmp) {
-							dl = dt.closest('dl');
-							panelEle.find(".form-wrap[data-group-name='" + groupName + "']").remove();
-							dl.remove();
-							host.splice(tmp.index, 1);
-						}
-					}
-					return false;
-					// 禁止用
-				}).delegate('.dis-icon', 'click', function(e) {
-					var me = $(this),
-						tmp, status;
-					var dd = me.closest('dd[data-fun]');
-					var dt = me.closest('dt');
-					var dl, activeDD;
-					var groupName, branchName;
-					// 如果选择的是一个分支
-					if (dd.length) {
-						// 找到dl元素
-						dl = dd.closest('dl[data-fun]');
-						groupName = dl.attr('data-group-name');
-						branchName = dd.attr('data-branch-name');
-						tmp = configModel.findBranch(groupName, branchName);
-						status = !dd.hasClass('disabled');
-						tmp.branch.disabled = status;
-						dd[status ? "addClass" : "removeClass"]('disabled');
-						if (tmp.branch.val && tmp.branch.val.length) {
-							tmp.branch.val.forEach(function(one) {
-								one.disabled = status;
+				}
+				//  如果选择的是一个分组
+				if (dt.length) {
+					dl = dt.closest('dl');
+					groupName = dl.attr('data-group-name');
+					tmp = configModel.findGroup(groupName);
+					if (tmp) {
+						status = !dl.hasClass('disabled');
+						dl[status ? "addClass" : "removeClass"]('disabled');
+						dl.find('dd[data-fun="project"]')[status ? "addClass" : "removeClass"]('disabled');
+
+						panelEle.find('.form-wrap[data-group-name="' + groupName + '"]')
+							.find('.drag-wrap .form-group')[status ? "addClass" : "removeClass"]('disabled');
+
+						// 同步内存状态
+						tmp.group.disabled = status;
+						if (tmp.group && tmp.group.branches.length) {
+							tmp.group.branches.forEach(function(branch) {
+								branch.disabled = status;
+								if (branch.val && branch.val.length) {
+									branch.val.forEach(function(one) {
+										one.disabled = status;
+									});
+								}
 							});
 						}
-						panelEle.find('.form-wrap[data-group-name="' + groupName + '"][data-branch-name="' + branchName + '"]')
-							.find('.drag-wrap .form-group')[status ? "addClass" : "removeClass"]('disabled');
-						// 循环判断一个分组下的所有分支是否全部都是禁用的
-						status = true;
-						$.each(tmp.group.branches, function(inedx, one) {
-							if (!one.disabled) {
-								status = false;
-								return false;
-							}
-						});
-						if (tmp.group.disabled !== status) {
-							tmp.group.disabled = status;
-							dl[status ? "addClass" : "removeClass"]('disabled');
-						}
 					}
-					//  如果选择的是一个分组
-					if (dt.length) {
-						dl = dt.closest('dl');
-						groupName = dl.attr('data-group-name');
-						tmp = configModel.findGroup(groupName);
-						if (tmp) {
-							status = !dl.hasClass('disabled');
-							dl[status ? "addClass" : "removeClass"]('disabled');
-							dl.find('dd[data-fun="project"]')[status ? "addClass" : "removeClass"]('disabled');
-
-							panelEle.find('.form-wrap[data-group-name="' + groupName + '"]')
-								.find('.drag-wrap .form-group')[status ? "addClass" : "removeClass"]('disabled');
-
-							// 同步内存状态
-							tmp.group.disabled = status;
-							if (tmp.group && tmp.group.branches.length) {
-								tmp.group.branches.forEach(function(branch) {
-									branch.disabled = status;
-									if (branch.val && branch.val.length) {
-										branch.val.forEach(function(one) {
-											one.disabled = status;
-										});
-									}
-								});
-							}
-						}
-					}
-					return false;
-					// 点击展开右侧面板
-				}).delegate('dd[data-fun]', 'click', function(e) {
-					var me = $(this),
-						branchName = me.attr('data-branch-name'),
-						groupName = me.parent().attr('data-group-name');
-					if (!me.hasClass('active')) {
-						sidebarEle.find('dd.active[data-fun="project"]').removeClass('active');
-						me.addClass('active');
-						manager.initProjectPanel(groupName, branchName);
-					}
-				})
-				.delegate('dd[data-fun]', 'dblclick', function(e) {
-					$('.disabled-all').trigger('click');
-					$(this).find('.dis-icon').trigger('click');
-					$('.save:eq(0)').triggerHandler("click");
-				});
+				}
+				return false;
+				// 点击展开右侧面板
+			})
+			.delegate('dd[data-fun]', 'click', function(e) {
+				var me = $(this),
+					branchName = me.attr('data-branch-name'),
+					groupName = me.parent().attr('data-group-name');
+				if (!me.hasClass('active')) {
+					sidebarEle.find('dd.active[data-fun="project"]').removeClass('active');
+					me.addClass('active');
+					manager.initProjectPanel(groupName, branchName);
+				}
+			})
+			.delegate('dd[data-fun]', 'dblclick', function(e) {
+				$('.disabled-all').trigger('click');
+				$(this).find('.dis-icon').trigger('click');
+				$('.save:eq(0)').triggerHandler("click");
+			});
 			return this;
 		},
 		// 初始化上部菜单

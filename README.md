@@ -48,6 +48,8 @@ ${request.getScheme()}
 ## 其他
 [帮助页面](https://github.com/jianxcao/ftl-node/blob/master/static/help.md)
 
+## [更新日志](./updateInfo.md)
+
 ## License
 
 MIT
