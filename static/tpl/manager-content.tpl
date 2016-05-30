@@ -4,7 +4,7 @@
 			<button type="button" class="btn btn-default create-path">新建路径</button>
 		</div>
 	</div>
-	<div class="form-group">
+	<div class="form-group base-path-group">
 		<label class="col-md-1 control-label">项目根路径</label>
 		<div class="col-md-8">
 			<input type="text" class="form-control" placeholder="请输入项目根路径" value="<%=data.basePath || ""%>" name="basePath">
@@ -13,7 +13,7 @@
 	<div class="drag-wrap">
 		<%if (data.val && data.val.length) {%>
 			<%for(var i = 0; i < data.val.length; i++) {%>
-				<div class="form-group form-drag <%if (data.val[i].disabled){%> disabled<%}%>">
+				<div class="form-group form-drag code-virtual-path-group<%if (data.val[i].disabled){%> disabled<%}%>">
 					<label class="col-md-1 control-label">路径</label>
 					<div class="col-md-4">
 						<input type="text" class="form-control" placeholder="请输入项目路径" value="<%=data.val[i].codePath || ""%>" name="codePath">

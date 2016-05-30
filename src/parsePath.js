@@ -42,7 +42,7 @@ var parsePath = function(url) {
 			}
 		}
 	} else {
-		throw new Error('host下至少配置一个可用的组');
+		throw new Error('请至少配置一个可以用的分组');
 	}
 };
 var parseBranch = function(branch, url, groupName) {
@@ -56,39 +56,55 @@ var parseBranch = function(branch, url, groupName) {
 		return;
 	}
 	basePath = branch.basePath || "";
-	if (!(branch.val && branch.val.length)) {
+	var val = [];
+	if (branch.val && branch.val.length && branch.val.slice) {
+		val = branch.val.slice(0);
+	}
+	if (!val.length && !basePath) {
 		return;
 	}
-	for(var j = 0; j < branch.val.length; j++) {
+	//判断当前用户是否已经添加了一个路径表示当前跟路径的路径,并且没有配置虚拟路径
+	var status = val.some(function(current) {
+		if (path.resolve(basePath, (current.codePath || '')) === basePath &&  !current.virtualPath) {
+			return true;
+		}
+	});
+	console.log(branch, groupName);
+	//如果没有帮用户添加一个--添加到队列的前面
+	if (!status) {
+		val.unshift({
+			codePath: './'
+		});
+	}
+	for(var j = 0; j < val.length; j++) {
 		// 获取项目单独的配置，这里可以配置路由重定向
-		current = branch.val[j];
+		current = val[j];
 		if (current.disabled) {
 			continue;
 		}
 		url = redirectUrl(url, groupName, branch.branchName);
 		changePathname = URL.parse(url).pathname;
-		codePath = current.codePath;
-		if (codePath) {
-			// 将基础路径和 代码路径合并
-			codePath = path.resolve(basePath, codePath);
-			// 虚拟路径处理
-			if (current.virtualPath) {
-				v = path.normalize("/" + current.virtualPath);
-				changePathname = path.normalize(changePathname);
-				v = v.replace(/[\*\.\?\+\$\^\[\]\(\)\{\}\|\\\/]/g, function(cur) {
-					return "\\" + cur;
-				});
-				tmp = ["^", v].join('');
-				// 创建正则
-				reg = new RegExp(tmp);
-				// // 符合路经规则--去掉虚拟路径
-				if (reg.test(changePathname)) {
-					changePathname = changePathname.replace(reg, "");
-					p = path.join(codePath, changePathname);
-				}
-			} else {
+		//如果codePath为空默认为当前子路径
+		codePath = current.codePath || "";
+		// 将基础路径和 代码路径合并
+		codePath = path.resolve(basePath, codePath);
+		// 虚拟路径处理
+		if (current.virtualPath) {
+			v = path.normalize("/" + current.virtualPath);
+			changePathname = path.normalize(changePathname);
+			v = v.replace(/[\*\.\?\+\$\^\[\]\(\)\{\}\|\\\/]/g, function(cur) {
+				return "\\" + cur;
+			});
+			tmp = ["^", v].join('');
+			// 创建正则
+			reg = new RegExp(tmp);
+			// // 符合路经规则--去掉虚拟路径
+			if (reg.test(changePathname)) {
+				changePathname = changePathname.replace(reg, "");
 				p = path.join(codePath, changePathname);
 			}
+		} else {
+			p = path.join(codePath, changePathname);
 		}
 		if (p) {
 			exists = fs.existsSync(p);

@@ -52,7 +52,7 @@ exports.get = function(key) {
 		}
 		return tmp;
 	}
-}
+};
 
 // 设置一个直接
 exports.set = function(key, val) {

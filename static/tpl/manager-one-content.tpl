@@ -1,4 +1,4 @@
-<div class="form-group form-drag">
+<div class="form-group form-drag code-virtual-path-group">
 	<label class="col-md-1 control-label">路径</label>
 	<div class="col-md-4">
 		<input type="text" class="form-control" placeholder="请输入项目路径" name="codePath">

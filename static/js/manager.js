@@ -1,5 +1,5 @@
-define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "js/command", "lib/scrollBar/scrollBar", "bootstrap"],
- function($, tplToHtml, setData, Sortable, infoTip, command, scrollBar) {
+define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "js/command", "lib/scrollBar/scrollBar", "lib/keymaster", "bootstrap"],
+ function($, tplToHtml, setData, Sortable, infoTip, command, scrollBar, keymaster) {
 	var manager = {
 		cache: {},
 		init: function(configModel) {
@@ -562,8 +562,13 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 					groupName = me.attr('data-group-name'),
 					branchName = me.attr('data-branch-name'),
 					tmp,
-					data = {};
-				formGroup.each(function() {
+					data = {
+						branchName: branchName,
+						val: []
+					};
+
+				formGroup.filter('.base-path-group, .code-virtual-path-group')
+				.each(function() {
 					var me = $(this),
 						inputs = me.find('input'),
 						one = {};
@@ -577,10 +582,9 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 						}
 					});
 					if (!$.isEmptyObject(one)) {
-						if (me.hasClass('form-drag')) {
+						if (me.hasClass('code-virtual-path-group')) {
 							one.disabled = !!me.hasClass('disabled');
 						}
-						data.val = data.val || [];
 						data.val.push(one);
 					}
 				});
@@ -598,11 +602,9 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 				manager.setPanelData();
 				manager.configModel.save();
 			});
-			$(document).on('keydown', function(e) {
-				if (e.ctrlKey && +e.keyCode === 83) {
-					save.triggerHandler('click');
-					return false;
-				}
+			keymaster('⌘+s, ctrl+s', function(event, handler){
+				save.triggerHandler('click');
+				return false;
 			});
 			return this;
 		}
