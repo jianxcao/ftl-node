@@ -69,7 +69,6 @@ var parseBranch = function(branch, url, groupName) {
 			return true;
 		}
 	});
-	console.log(branch, groupName);
 	//如果没有帮用户添加一个--添加到队列的前面
 	if (!status) {
 		val.unshift({
