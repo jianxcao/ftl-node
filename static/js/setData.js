@@ -3,7 +3,9 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 	var oldData =  "";
 	var result = {
 		// 表示与后端同步的分组信息
-		data: {},
+		data: {
+			host: []
+		},
 		//折叠信息，这个存储在本地localstroage中
 		//为键值对 健是  groupName，true表示折叠，没有表示 不折叠
 		foldInfo: {},
@@ -152,15 +154,20 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 			cache: false,
 			complete: function(data, error) {
 				if (error === 'error') {
-					result.data = {};
+					result.data = {
+						host: []
+					};
 				} else {
 					try {
 						if (data.responseJSON) {
 							result.data = data.responseJSON;
+							result.data.host = result.data.host || [];
 						}
 					} catch (e) {
 						console.error("从服务器获取数据后解析错误");
-						result.data = {};
+						result.data = {
+							host: []
+						};
 					}
 				}
 				oldData = JSON.stringify(result.data);
