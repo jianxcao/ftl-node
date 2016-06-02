@@ -1,0 +1,189 @@
+{
+	//默认全局变量  
+	"globals": {
+		"jQuery": false,
+		"Core": false,
+		"easyNav": false,
+		"Game": false,
+		"Class": false,
+		"LS": false,
+		"SS": false,
+		"_": false,
+		"Zepto": false,
+		"window": false,
+		"define": false,
+		"require": false,
+		"AppCore": false
+	},
+
+	/********** 强制定义选项 *************/
+
+	//禁止位运算符使用，多数情况下可能只是为了写 && 而产生笔误  
+	"bitwise": false,
+
+	//强制使用驼峰命名(camelCase)或全大写下划线命名(UPPER_CASE)  
+	"camelcase": true,
+
+	//强制使用{}包裹循环体代码，比如if{}或while{}  
+	"curly": true,
+
+	//强制使用强等 === 和 !== 来代替 == 和 !=  
+	"eqeqeq": true,
+
+	//强制兼容ES3语法以兼容低版本浏览器  
+	"es3": false,
+
+	//要求所有的forin循环需要使用hasOwnProperty来检查遍历的元素是否为自己私有的属性（而不是原型属性）  
+	"forin": false,
+
+	//禁止覆盖原生对象的原型属性  
+	"freeze": true,
+
+	//禁止使用非包装的立即执行函数，如 +function(){}();  
+	"immed": true,
+
+	//强制前置空格的数量  
+	"indent": 2,
+
+	//禁止变量后定义  
+	"latedef": true,
+
+	//强制“类”构造器的首字母需要大写，即new操作符后必须是首字母大写的类构造器  
+	"newcap": true,
+
+	//禁止使用 arguments.caller 和 arguments.callee  
+	"noarg": true,
+
+	//当存在空代码块（比如 if(some){/* nothing here */}）时给出警告  
+	"noempty": true,
+
+	//禁止”non-breaking whitespace” 这是Mac键盘在某种情况下可以键入的字符,据说会破坏非UTF8编码的页面  
+	"nonbsp": true,
+
+	//禁止使用构造器函数创建实例后而不保存实例（因为那是一个普通函数干的事情）  
+	"nonew": true,
+
+	//禁止使用一元操作符 ++ 和 --  
+	"plusplus": false,
+
+	//强制统一使用引号类型，设置为true则要求不能混用，设置为single则强制为单引号，设置为double则强制为双引号  
+	"quotmark": false,
+
+	//禁止使用不在全局变量列表中的未定义的变量  
+	"undef": true,
+
+	//当有未使用的变量时，给出警告  
+	"unused": true,
+
+	//强制使用ES5的严格模式, Strict Mode是对JS用法的一些限制，过滤掉了容易出错的特性和不容易优化的特性。  
+	"strict": false,
+
+	//禁止行尾空格  
+	"trailing": true,
+
+	//最多形参数量限制，如果超过请使用单一的 option 形参  
+	"maxparams": 4,
+
+	//最大代码深度限制  
+	"maxdepth": 4,
+
+	//函数中最大语句数限制  
+	"maxstatements": 80,
+
+	//最大圈复杂度限制(详细见 http://zh.wikipedia.org/zh-cn/%E5%BE%AA%E7%92%B0%E8%A4%87%E9%9B%9C%E5%BA%A6 )  
+	"maxcomplexity": 15,
+
+	//最大单行字符长度限制  
+	"maxlen": 120,
+
+	/********** 宽松定义选项 *************/
+
+	//允许省略不必要的分号  
+	"asi": false,
+
+	//允许在if，for，while语句中使用赋值  
+	"boss": false,
+
+	//允许在代码中出现 debugger 中断调试代码  
+	"debug": false,
+
+	//允许 ==null 语句，==null 通常用来比较 === null || === undefined  
+	"eqnull": false,
+
+	//允许ECMAScript 6规范，ES6目前存在较多的浏览器兼容性  
+	"esnext": false,
+
+	//允许使用eval  
+	"evil": false,
+
+	//允许应该出现赋值或函数调用的地方使用表达式  
+	"expr": true,
+
+	//允许在控制体内定义变量而在外部使用  
+	"funcscope": false,
+
+	//使得JSHint能与Google Closure Compiler兼容  
+	"gcl": true,
+
+	//允许全局严格模式  
+	"globalstrict": false,
+
+	//允许iterator，不是所有的浏览器都支持iterator  
+	"iterator": false,
+
+	//允许单行控制块省略分号  
+	"lastsemic": false,
+
+	//允许不安全的行中断(与laxcomma配合使用)  
+	"laxbreak": false,
+
+	//允许循环中定义函数  
+	"loopfunc": false,
+
+	//允许逗号开头的编码样式  
+	"laxcomma": false,
+
+	//JSHint中断扫描前允许的最大错误数，默认50  
+	"maxerr": 60,
+
+	//除非你开发的是仅仅针对于火狐平台的，否则请设置为false  
+	"moz": false,
+
+	//允许多行字符串  
+	"multistr": false,
+
+	//允许非法的typeof操作  
+	"notypeof": false,
+
+	//允许 proto，不是所有的浏览器都支持proto  
+	"proto": false,
+
+	//允许形如 javascript: 格式的url地址  
+	"scripturl": true,
+
+	//允许使用SmartTabs（详见 http://www.emacswiki.org/emacs/SmartTabs ）  
+	"smarttabs": false,
+
+	//允许变量重复定义  
+	"shadow": false,
+
+	//允许使用 father['sub'] 方式来获取子节点  
+	"sub": false,
+
+	//允许new function() {…} 和 new Object  
+	"supernew": false,
+
+	//允许严格模式下在非构造函数中使用this  
+	"validthis": true,
+
+	//允许发生器中没有yield语句  
+	"noyield": false,
+
+	/********** 环境定义选项 *************/
+	//更多环境配置选项见 http://www.jshint.com/docs/options/#environments  
+
+	"devel": true,
+	"nonstandard": true,
+	"node": true,
+	"jquery": true
+}

@@ -8,10 +8,8 @@ var parseurl = require('parseurl');
 var path = require('path');
 var log = require('../src/log');
 var parsePath = require('../src/parsePath');
-
 var fontsFileExt = ["eot", "svg", "ttf", "woff"];
 var excludeFileExt = ["ftl", "ejs", "jsp"];
-
 exports = module.exports = function serveStatic() {
   return function serveStatic(req, res, next) {
 	// 如果不是get请求或者 是head， 就直接到下一个请求
@@ -19,13 +17,14 @@ exports = module.exports = function serveStatic() {
 	  return next();
 	}
 	var url  = parseurl(req);
-	var port = req.app.get("port");
 	var fullUrl = req.protocol + '://' + req.get('host') + req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
 	var ext = path.extname(pathname).replace('.', "");
 	var absPath, headers, pathObject;
 	ext = ext.toLowerCase();
+	res.set('Real-Ip', req.ip);
+	log.debug(req.ip);
 	if (!~excludeFileExt.indexOf(ext)) {
 		try{
 			pathObject = parsePath(fullUrl);
@@ -41,13 +40,13 @@ exports = module.exports = function serveStatic() {
 				return res.sendFile(absPath, {
 					headers: headers
 				}, function(){});
-			} else {
+			} else { //路径没有查找到
 				res.status(404);
 				res.render("404", {
 					message: '没有找到对应的文件,请查看server.json配置文件,当前文件相对路径' +  pathname
 				});
 			}
-		}catch(e) {
+		} catch(e) {
 			next(e);
 		}
 	} else {

@@ -11,13 +11,15 @@ var config = require('../src/config');
 var querystring = require('querystring');
 var getProjectConfig = require('../src/getProjectConfig');
 var URL = require('url');
+var parsePath , parseBranch, redirectUrl;
+
 /**
  * 根据配置文件和当前路径解析出一个合理的文件路径，解析成功则返回文件路径
  *
  * @param {String} pathname
  * @return{String} path，返回一个绝对的文件路径，如果文件找到的话
  */
-var parsePath = function(url) {
+parsePath = function(url) {
 	url = querystring.unescape(url);
 	var pathTree = config.get();
 	// 获取路径
@@ -45,7 +47,7 @@ var parsePath = function(url) {
 		throw new Error('请至少配置一个可以用的分组');
 	}
 };
-var parseBranch = function(branch, url, groupName) {
+parseBranch = function(branch, url, groupName) {
 	var basePath;
 	var	current,
 		tmp,
@@ -71,7 +73,7 @@ var parseBranch = function(branch, url, groupName) {
 	});
 	//如果没有帮用户添加一个--添加到队列的前面
 	if (!status) {
-		val.unshift({
+		val.push({
 			codePath: './'
 		});
 	}
@@ -125,7 +127,7 @@ var parseBranch = function(branch, url, groupName) {
 	}
 };
 
-var redirectUrl = function(url, groupName, branchName) {
+redirectUrl = function(url, groupName, branchName) {
 	var type, reg, tmp, nUrl, checkUrl = /^http.*/;
 	var commandConfig = getProjectConfig(groupName, branchName);
 	if (commandConfig && commandConfig.routes && commandConfig.routes.length) {

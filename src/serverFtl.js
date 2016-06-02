@@ -23,7 +23,7 @@ exports = module.exports = function serveFtl(port) {
 	//  重置错误提示
 	consoleErrors = [];
 	var url  = parseurl(req);
-	var port = req.app.get("port");
+	port = port || req.app.get("port") || 80;
 	var fullUrl = req.protocol + '://' + req.get('host') +  req.path;
 	// 获取路径
 	var pathname = path.normalize(url.pathname);
@@ -35,7 +35,7 @@ exports = module.exports = function serveFtl(port) {
 	//  需要在控制台输出的错误
 	//其内的每个元素是一个 object，object包括  message属性和 stack属性
 	ext = ext.toLowerCase();
-	if (ext && ext == "ftl") {
+	if (ext && ext === "ftl") {
 		try{
 			pathObject = parsePath(fullUrl);
 			commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
@@ -74,7 +74,7 @@ exports = module.exports = function serveFtl(port) {
 					return parseFtl(res, pathObject.basePath, pathObject.newPath, data, {}, tmpFilePaths);
 				})
 				.catch(function(err) {
-					if (typeof err == "string") {
+					if (typeof err === "string") {
 						err = new Error(err);
 					}
 					next(err);

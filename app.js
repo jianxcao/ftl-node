@@ -84,7 +84,7 @@ app.use(serverStatic());
 // // 运用ftl编译模块，即将ftl编译成html
 app.use(serverFtl(port));
 app.set("port", port);
-app.use(function(err, req, res, next) {
+app.use(function(err, req, res) {
 	log.error('发生错误了,', err.message);
 	res.status(500);
 	res.render("500", {
@@ -92,7 +92,7 @@ app.use(function(err, req, res, next) {
 	});
 });
 
-app.use(function(req, res, next){
+app.use(function(req, res){
 	res.status(404);
 	res.render("404", {
 		message: "没有找到路径, 文件路径," + req.originalUrl
