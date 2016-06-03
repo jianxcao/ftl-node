@@ -24,7 +24,6 @@ exports = module.exports = function serveStatic() {
 	var absPath, headers, pathObject;
 	ext = ext.toLowerCase();
 	res.set('Real-Ip', req.ip);
-	log.debug(req.ip);
 	if (!~excludeFileExt.indexOf(ext)) {
 		try{
 			pathObject = parsePath(fullUrl);

@@ -18,6 +18,10 @@ var fse = require('fs-extra');
 var getProjectConfig = require('../src/getProjectConfig');
 var setJarFile = require('../src/setJarFile');
 var consoleErrors = [];
+var getFtlData, parseInclude, createFile, deleteFiles,
+	parseToFtlData, formatTime, getOneModuleData, getReq,
+	parseFtl, getFtlConsoleErrorString, getConsoleErrors, parseMatchInclude;
+var regStartslash = /^(\\|\/).+/;
 exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
 	//  重置错误提示
@@ -60,7 +64,12 @@ exports = module.exports = function serveFtl(port) {
 				getFtlData()
 				// 解析里面所有的include，模拟出假数据
 				.then(function(data) {
-					pathObject.newFullPath = parseInclude(fullPath, tmpFilePaths, req, res);
+					pathObject.newFullPath = parseInclude({
+						basePath: pathObject.basePath,
+						tmpFIlePaths: tmpFilePaths,
+						req: req,
+						res: res
+					}, fullPath);
 					var newPath = pathObject.newFullPath.replace(pathObject.basePath, "");
 					pathObject.newPath = newPath;
 					return data;
@@ -95,7 +104,7 @@ exports = module.exports = function serveFtl(port) {
 };
 
 // 获取ftl数据
-var getFtlData = function() {
+getFtlData = function() {
 	return new Promise(function(resolve, reject) {
 		resolve({ENV: "local_dev"});
 	});
@@ -105,12 +114,19 @@ var getFtlData = function() {
  * <#include "../../inc/core.ftl">
  * <#import "../dhxy2013/inc/baseModule.ftl" as lottery>
  * <#mock "../dhxy2013/inc/baseModule.js">
- * @fullPath String ftl全路径
+ * @opt { 在递归中opt其实是共享的
+ *	basePath ftl基础路径(设置的根路径)，配置项中生效的那个
+ *	tmpFIlePaths 生成临时文件的存放位置
+ *	req 
+ * 	res
+ * }
+ *  dirname ftl所存放的跟路径
+ *  fullPath ftl全路径
  * **/
-var parseInclude = function(fullPath, tmpFilePaths, req, res) {
-	if (!tmpFilePaths ) {
-		tmpFilePaths = [];
-	}
+parseInclude = function(opt, fullPath) {
+	// log.debug("fullPath", fullPath);
+	opt.tmpFilePaths = opt.tmpFilePaths || [];
+	var	tmpFilePaths = opt.tmpFilePaths;//临时文件目录
 	// 如果创建新的文件并替换则会产生一个新的path
 	var newPath;
 	var pathResult = path.parse(fullPath);
@@ -118,42 +134,13 @@ var parseInclude = function(fullPath, tmpFilePaths, req, res) {
 	var newFileContent = null;
 	try{
 		var reg = /(<#--\s*){0,1}(?:<#){0,1}(include|import|mock)\s+(?:"|')([^"'\s]+)(?:"|')(?:\s+as\s+([^\s>]+)){0,1}\s*(?:>){0,1}(\s*-->){0,1}/g;
-		var bian = /^\$\{.*\}$/;
 		var one;
-		var command;
-		var currentPath;
-		var currentAbsolutePath;
-		var tmp;
 		var fileContent = fs.readFileSync(fullPath, {
 			encoding: "utf8"
 		});
 		newFileContent = fileContent;
 		while ((one = reg.exec(fileContent)) !== null) {
-			command = one[2];
-			currentPath = one[3];
-			//存在路径和命令，并且路径不是写死的
-			if (command && currentPath && !bian.test(currentPath)) {
-				//import和include指令代表要引入ftl
-				if (command === "import" || command === "include") {
-					//如果 import和include指令是注释的就不解析
-					if (!one[1]) {
-						currentAbsolutePath = path.resolve(dirname, currentPath);
-						var includePath = parseInclude(currentAbsolutePath, tmpFilePaths, req, res);
-						//path发生变化，证明引入的ftl中有假数据
-						if (includePath !== currentAbsolutePath) {
-							//用生成的临时文件代替当前文件路径
-							tmp = one[0].replace(currentPath, path.relative(dirname, includePath));
-							tmp = tmp.replace(/\\/g, "/");
-							newFileContent = newFileContent.replace(one[0], tmp);
-						}
-					}
-				// 如果需要mock假数据就生成一个临时的文件，去替换当前的文件
-				} else if (command == "mock") {
-					var data = getOneModuleData(path.resolve(dirname, currentPath), req, res);
-					var dataString = parseToFtlData(data);
-					newFileContent = newFileContent.replace(one[0], dataString);
-				}
-			}
+			newFileContent = parseMatchInclude(opt, one, fileContent, dirname);
 		}
 		//文件内容需要发生变化
 		if (newFileContent !== fileContent) {
@@ -167,8 +154,53 @@ var parseInclude = function(fullPath, tmpFilePaths, req, res) {
 	}
 	return fullPath;
 };
+
+//解析一个匹配的 include或者import或者 mock
+parseMatchInclude = function(opt, matches, fileContent, dirname) {
+	// log.debug(matches, '111');
+	var basePath = opt.basePath;
+	var command = matches[2];
+	var currentPath = matches[3];
+	var currentAbsolutePath;
+	var tmp;
+	var bian = /^\$\{.*\}$/;
+	//存在路径和命令，并且路径不是动态的路径
+	if (!command || !currentPath || bian.test(currentPath)) {
+		return fileContent;
+	}
+	//import和include指令代表要引入ftl
+	if (command === "import" || command === "include") {
+		// log.debug(currentPath, basePath, dirname, regStartslash.test(currentPath));
+		//如果 import和include指令是注释的就不解析
+		if (!matches[1]) {
+			if (regStartslash.test(currentPath)) {
+				currentAbsolutePath = path.join(basePath, currentPath);
+			} else {
+				currentAbsolutePath = path.resolve(dirname, currentPath);
+			}
+			// log.debug(currentAbsolutePath);
+			//更新fullPath
+			var includePath = parseInclude(opt, currentAbsolutePath);
+			//path发生变化，证明引入的ftl中有假数据
+			if (includePath !== currentAbsolutePath) {
+				//用生成的临时文件代替当前文件路径
+				tmp = matches[0].replace(currentPath, path.relative(dirname, includePath));
+				tmp = tmp.replace(/\\/g, "/");
+				fileContent = fileContent.replace(matches[0], tmp);
+			}
+		}
+	// 如果需要mock假数据就生成一个临时的文件，去替换当前的文件
+	} else if (command === "mock") {
+		var data = getOneModuleData(path.resolve(dirname, currentPath), opt.req, opt.res);
+		var dataString = parseToFtlData(data);
+		fileContent = fileContent.replace(matches[0], dataString);
+	}
+	
+	return fileContent;
+};
+
 // 创建文件并返回path
-var createFile = function(content, filePath) {
+createFile = function(content, filePath) {
 	try{
 		fse.outputFileSync(filePath, content);
 	}catch(err) {
@@ -176,7 +208,7 @@ var createFile = function(content, filePath) {
 	}
 };
 //删除文件
-var deleteFiles = function(filePaths) {
+deleteFiles = function(filePaths) {
 	try{
 		if (filePaths && filePaths.length) {
 			var i = 0;
@@ -191,7 +223,7 @@ var deleteFiles = function(filePaths) {
 	}
 };
 // 将data接卸成ftl数据的格式
-var parseToFtlData = function(data) {
+parseToFtlData = function(data) {
 	var html = [];
 	var parseValue =function(k, value) {
 		if (typeof value === 'object') {
@@ -222,7 +254,7 @@ var parseToFtlData = function(data) {
 	return html.join('');
 };
 //格式化日期
-var formatTime = function(timeNum, fmt) {
+formatTime = function(timeNum, fmt) {
 	timeNum = +timeNum;
 	if (isNaN(timeNum)) {
 		return timeNum;
@@ -248,7 +280,7 @@ var formatTime = function(timeNum, fmt) {
 	return fmt;
 };
 //获取引入的假数据
-var getOneModuleData = function(fullPath, req, res) {
+getOneModuleData = function(fullPath, req, res) {
 	var data = {};
 	try{
 		//如果当前模块存在就删除当前模块的缓存
@@ -270,7 +302,7 @@ var getOneModuleData = function(fullPath, req, res) {
 	return data;
 };
 // 增加req
-var getReq = function(req, data, webPort) {
+getReq = function(req, data, webPort) {
 	return new Promise(function(resolve, reject) {
 		var headers = req.headers;
 		var myHeaders = {}, k;
@@ -305,7 +337,7 @@ var getReq = function(req, data, webPort) {
  * @param tmpFilePaths 生成的临时ftl的所有路径 (主要是如果这个ftl报错了，需要把路径替换成 真正的flt)
  * @returns {*}
  */
-var parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
+parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 	var cmd;
 	var stdout;
 	var stderr;
@@ -377,7 +409,7 @@ var parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 	});
 };
 //将ftl错误解析后扔到console。log中去
-var getFtlConsoleErrorString = function(messages) {
+getFtlConsoleErrorString = function(messages) {
 	var result;
 	result = messages.map(function(val, index, com) {
 		var retVal = '', tmp;
@@ -404,7 +436,7 @@ var getFtlConsoleErrorString = function(messages) {
 	return result.join("");
 };
 //向控制台输出错误
-var getConsoleErrors = function() {
+getConsoleErrors = function() {
 	if (consoleErrors && consoleErrors.length) {
 		return	consoleErrors.map(function(current) {
 			if (current.message && current.stack) {

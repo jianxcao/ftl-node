@@ -82,10 +82,10 @@
 	"trailing": true,
 
 	//最多形参数量限制，如果超过请使用单一的 option 形参  
-	"maxparams": 4,
+	"maxparams": 5,
 
 	//最大代码深度限制  
-	"maxdepth": 4,
+	"maxdepth": 5,
 
 	//函数中最大语句数限制  
 	"maxstatements": 80,
