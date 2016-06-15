@@ -140,7 +140,7 @@ parseInclude = function(opt, fullPath) {
 		});
 		newFileContent = fileContent;
 		while ((one = reg.exec(fileContent)) !== null) {
-			newFileContent = parseMatchInclude(opt, one, fileContent, dirname);
+			newFileContent = parseMatchInclude(opt, one, newFileContent, dirname);
 		}
 		//文件内容需要发生变化
 		if (newFileContent !== fileContent) {
@@ -195,7 +195,6 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 		var dataString = parseToFtlData(data);
 		fileContent = fileContent.replace(matches[0], dataString);
 	}
-	
 	return fileContent;
 };
 
