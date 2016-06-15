@@ -8,6 +8,7 @@ var parseurl = require('parseurl');
 var path = require('path');
 var log = require('../src/log');
 var fs = require('fs');
+var parseRemote = require('./parseRemote/parseRemoteMock');
 var parsePath = require('../src/parsePath');
 var jarFilePath = path.join(__dirname, "../lib/jar/ftl.jar");
 var spawn = require('child_process').spawn;
@@ -20,7 +21,7 @@ var setJarFile = require('../src/setJarFile');
 var consoleErrors = [];
 var getFtlData, parseInclude, createFile, deleteFiles,
 	parseToFtlData, formatTime, getOneModuleData, getReq,
-	parseFtl, getFtlConsoleErrorString, getConsoleErrors, parseMatchInclude;
+	parseFtl, getFtlConsoleErrorString, getConsoleErrors, parseMatchInclude, parseOne;
 var regStartslash = /^(\\|\/).+/;
 exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
@@ -42,13 +43,13 @@ exports = module.exports = function serveFtl(port) {
 	if (ext && ext === "ftl") {
 		try{
 			pathObject = parsePath(fullUrl);
-			commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
-			jarVersion = "";
-			if (commandConfig && commandConfig.jarVersion) {
-				jarVersion = commandConfig.jarVersion;
-			}
-			setJarFile(jarVersion);
-			if (pathObject) {
+			if (pathObject && pathObject.groupName && pathObject.branchName) {
+				commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
+				jarVersion = "";
+				if (commandConfig && commandConfig.jarVersion) {
+					jarVersion = commandConfig.jarVersion;
+				}
+				setJarFile(jarVersion);
 				//	回收生成的临时文件
 				req.on('close', function () {
 					deleteFiles(tmpFilePaths);
@@ -64,15 +65,18 @@ exports = module.exports = function serveFtl(port) {
 				getFtlData()
 				// 解析里面所有的include，模拟出假数据
 				.then(function(data) {
-					pathObject.newFullPath = parseInclude({
+					return parseInclude({
 						basePath: pathObject.basePath,
-						tmpFIlePaths: tmpFilePaths,
+						tmpFilePaths: tmpFilePaths,
 						req: req,
-						res: res
-					}, fullPath);
-					var newPath = pathObject.newFullPath.replace(pathObject.basePath, "");
-					pathObject.newPath = newPath;
-					return data;
+						res: res,
+						groupName: pathObject.groupName,
+						branchName: pathObject.branchName
+					}, fullPath)
+					.then(function(newFullPath) {
+						pathObject.newPath = newFullPath.replace(pathObject.basePath, "");
+						return data;
+					});
 				})
 				// 获取res中的一些数据
 				.then(function(data) {
@@ -105,7 +109,7 @@ exports = module.exports = function serveFtl(port) {
 
 // 获取ftl数据
 getFtlData = function() {
-	return new Promise(function(resolve, reject) {
+	return new Promise(function(resolve) {
 		resolve({ENV: "local_dev"});
 	});
 };
@@ -124,35 +128,49 @@ getFtlData = function() {
  *  fullPath ftl全路径
  * **/
 parseInclude = function(opt, fullPath) {
-	// log.debug("fullPath", fullPath);
-	opt.tmpFilePaths = opt.tmpFilePaths || [];
-	var	tmpFilePaths = opt.tmpFilePaths;//临时文件目录
-	// 如果创建新的文件并替换则会产生一个新的path
-	var newPath;
-	var pathResult = path.parse(fullPath);
-	var dirname = pathResult.dir;
-	var newFileContent = null;
-	try{
-		var reg = /(<#--\s*){0,1}(?:<#){0,1}(include|import|mock)\s+(?:"|')([^"'\s]+)(?:"|')(?:\s+as\s+([^\s>]+)){0,1}\s*(?:>){0,1}(\s*-->){0,1}/g;
-		var one;
-		var fileContent = fs.readFileSync(fullPath, {
-			encoding: "utf8"
-		});
-		newFileContent = fileContent;
-		while ((one = reg.exec(fileContent)) !== null) {
-			newFileContent = parseMatchInclude(opt, one, newFileContent, dirname);
+	return new Promise(function(resolve) {
+		opt.tmpFilePaths = opt.tmpFilePaths || [];
+		var	tmpFilePaths = opt.tmpFilePaths;//临时文件目录
+		// 如果创建新的文件并替换则会产生一个新的path
+		var newPath;
+		var pathResult = path.parse(fullPath);
+		var dirname = pathResult.dir;
+		try{
+			var reg = /(<#--\s*){0,1}(?:<#){0,1}(include|import|mock)\s+(?:"|')([^"'\s]+)(?:"|')(?:\s+as\s+([^\s>]+)){0,1}\s*(?:>){0,1}(\s*-->){0,1}/g;
+			var one;
+			var fileContent = fs.readFileSync(fullPath, {
+				encoding: "utf8"
+			});
+			var p = Promise.resolve(fileContent);
+			while ((one = reg.exec(fileContent)) !== null) {
+				p = parseOne(p, opt, one, fileContent, dirname);
+			}
+			p = p.then(function(newFileContent) {
+				//文件内容需要发生变化
+				if (newFileContent !== fileContent) {
+					newPath = path.join(dirname, pathResult.name + "__tmp" + new Date().getTime() + pathResult.ext);
+					tmpFilePaths.push(newPath);
+					createFile(newFileContent, newPath);
+					return newPath;
+				} else {
+					return fullPath;
+				}
+			});
+			resolve(p);
+		} catch (err){
+			log.error(err);
 		}
-		//文件内容需要发生变化
-		if (newFileContent !== fileContent) {
-			newPath = path.join(dirname, pathResult.name + "__tmp" + new Date().getTime() + pathResult.ext);
-			tmpFilePaths.push(newPath);
-			createFile(newFileContent, newPath);
-			return newPath;
-		}
-	}catch (err){
-		log.error(err);
-	}
-	return fullPath;
+		resolve(fullPath);
+	});
+};
+/**
+ * 循环破解其中一个
+ * @return {[type]} [description]
+ */
+parseOne = function(current, opt, matches, fileContent, dirname) {
+	return current.then(function(fileContent) {
+		return parseMatchInclude(opt, matches, fileContent, dirname);
+	});
 };
 
 //解析一个匹配的 include或者import或者 mock
@@ -166,7 +184,7 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 	var bian = /^\$\{.*\}$/;
 	//存在路径和命令，并且路径不是动态的路径
 	if (!command || !currentPath || bian.test(currentPath)) {
-		return fileContent;
+		return Promise.resolve(fileContent);
 	}
 	//import和include指令代表要引入ftl
 	if (command === "import" || command === "include") {
@@ -180,24 +198,39 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 			}
 			// log.debug(currentAbsolutePath);
 			//更新fullPath
-			var includePath = parseInclude(opt, currentAbsolutePath);
-			//path发生变化，证明引入的ftl中有假数据
-			if (includePath !== currentAbsolutePath) {
-				//用生成的临时文件代替当前文件路径
-				tmp = matches[0].replace(currentPath, path.relative(dirname, includePath));
-				tmp = tmp.replace(/\\/g, "/");
-				fileContent = fileContent.replace(matches[0], tmp);
-			}
+			return parseInclude(opt, currentAbsolutePath)
+			.then(function(includePath) {
+				//path发生变化，证明引入的ftl中有假数据
+				if (includePath !== currentAbsolutePath) {
+					//用生成的临时文件代替当前文件路径
+					tmp = matches[0].replace(currentPath, path.relative(dirname, includePath));
+					tmp = tmp.replace(/\\/g, "/");
+					fileContent = fileContent.replace(matches[0], tmp);
+				}
+				return fileContent;
+			});
+		} else {
+			return Promise.resolve(fileContent);
 		}
 	// 如果需要mock假数据就生成一个临时的文件，去替换当前的文件
 	} else if (command === "mock") {
-		var data = getOneModuleData(path.resolve(dirname, currentPath), opt.req, opt.res);
-		var dataString = parseToFtlData(data);
-		fileContent = fileContent.replace(matches[0], dataString);
+		return getOneModuleData({
+			dirname: dirname,
+			currentPath: currentPath,
+			req: opt.req,
+			res: opt.res,
+			groupName: opt.groupName,
+			branchName: opt.branchName
+		})
+		//成功或者是把都返回数据
+		.then(function(data) {
+			var dataString = parseToFtlData(data);
+			return fileContent.replace(matches[0], dataString);
+		}, function() {
+			return fileContent;
+		});
 	}
-	return fileContent;
 };
-
 // 创建文件并返回path
 createFile = function(content, filePath) {
 	try{
@@ -279,26 +312,57 @@ formatTime = function(timeNum, fmt) {
 	return fmt;
 };
 //获取引入的假数据
-getOneModuleData = function(fullPath, req, res) {
+getOneModuleData = function(options) {
+	var dirname = options.dirname,
+		currentPath = options.currentPath,
+		req = options.req,
+		res = options.res,
+		groupName = options.groupName,
+		branchName = options.branchName;
 	var data = {};
-	try{
-		//如果当前模块存在就删除当前模块的缓存
-		if (require.cache && require.cache[fullPath]) {
-			delete  require.cache[fullPath];
-		}
-		var my = require(fullPath);
-		if (typeof my === 'function') {
-			my = my(req, res);
-		}
-		if (typeof my === "object") {
-			data = my;
-		}
-	}catch(err) {
-		log.error(err.message);
-		err.message = "假数据解析出错：    " + err.message;
-		consoleErrors.push(err);
+	var ext =  path.extname(currentPath).replace('.', "");
+	//js假数据
+	if (ext === 'js') {
+		return new Promise(function(resolve) {
+			var fullPath = path.resolve(dirname, currentPath);
+			try{
+				//如果当前模块存在就删除当前模块的缓存
+				if (require.cache && require.cache[fullPath]) {
+					delete  require.cache[fullPath];
+				}
+				var my = require(fullPath);
+				if (typeof my === 'function') {
+					my = my(req, res);
+				}
+				if (typeof my === "object") {
+					data = my;
+				}
+				resolve(data);
+			} catch(err) {
+				//假数据错误只提示
+				resolve(data);
+				log.error(err.message);
+				err.message = "假数据解析出错：    " + err.message;
+				consoleErrors.push(err);
+			}
+		});
+	//远程假数据
+	} else if (ext === 'html') {
+		return parseRemote
+		.getFtlData({
+			url: currentPath,
+			groupName: groupName,
+			branchName: branchName,
+		}).
+		//成功或者失败都返回数据
+		then(function(data) {
+			return data;
+		}, function() {
+			return data;
+		});
+	} else {
+		return Promise.resolve(data);
 	}
-	return data;
 };
 // 增加req
 getReq = function(req, data, webPort) {

@@ -25,6 +25,9 @@ module.exports = find = function(groupName, branchName) {
 		rcFinder = new RcFinder('run.config.js', {
 			loader: function(p) {
 				try{
+					if (require.cache && require.cache[p]) {
+						delete  require.cache[p];
+					}
 					// 以模块形式引入这个文件
 					config = require(p);
 					if (config) {

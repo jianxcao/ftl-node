@@ -137,14 +137,16 @@ redirectUrl = function(url, groupName, branchName) {
 				type = typeof tmp.test;
 				if (type === "string") {
 					reg = new RegExp(type);
+				} else if(tmp.test instanceof RegExp){
+					reg =  tmp.test;
 				}
-				if (tmp.test instanceof RegExp) {
-					if (tmp.test.test(url)) {
+				if (reg) {
+					if (reg.test(url)) {
 						if (typeof tmp.redirect === "string") {
-							url = url.replace(tmp.test, tmp.redirect);
+							url = url.replace(reg, tmp.redirect);
 						} else if (tmp.redirect instanceof Function) {
 							nUrl = tmp.redirect(url) || "";
-							if (nUrl.test(checkUrl)) {
+							if (checkUrl.test(nUrl)) {
 								url = nUrl;
 							}
 						}
