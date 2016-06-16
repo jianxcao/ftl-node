@@ -21,8 +21,7 @@ getAjaxData = function(options) {
 		return res.send("");
 	}
 	if (urlObject.host) {
-		tmp = urlObject.protocol + "\/\/" + urlObject.hostname + urlObject.port === '80' ? "" : (":" + urlObject.port);
-		visitDomain = tmp;
+		visitDomain = urlObject.protocol + "\/\/" + urlObject.hostname + urlObject.port === '80' ? "" : (":" + urlObject.port);
 	} else {
 		port = port === '80' ? "" : (":" + port)
 		visitDomain = req.protocol + ":\/\/" + req.hostname + port;
@@ -31,7 +30,8 @@ getAjaxData = function(options) {
 		type: "ajax",
 		groupName: pathObject.groupName,
 		branchName: pathObject.branchName,
-		url: urlObject.path,
+		url: urlObject.pathname,
+		queryString: urlObject.query,
 		visitDomain: visitDomain,
 	});
 	if (!url) {
@@ -114,14 +114,14 @@ getCmdUrl = function(options) {
 	if (is) {
 		//取到mock假数据的规则假数据规则的结构
 		if (mock && mock.length) {
-			return parseRule(mock, url, visitDomain);
+			return parseRule(mock, url, visitDomain, options.queryString);
 		} else {
 			log.warning('没有配置正确地' + type + "假数据规则");
 		}
 	}
 };
 //解析规则
-parseRule = function(mock, url, visitDomain) {
+parseRule = function(mock, url, visitDomain, queryString) {
 	var tmp, type, reg, checkUrl = /^http/,
 		nUrl;
 	for (var i = 0; i < mock.length; i++) {
@@ -141,7 +141,7 @@ parseRule = function(mock, url, visitDomain) {
 							return url;
 						}
 					} else if (tmp.redirect instanceof Function) {
-						nUrl = visitDomain ? tmp.redirect(url, visitDomain) : tmp.redirect(url);
+						nUrl = visitDomain ? tmp.redirect(url, visitDomain, queryString) : tmp.redirect(url);
 						if (checkUrl.test(nUrl)) {
 							return nUrl;
 						}
