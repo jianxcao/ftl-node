@@ -21,7 +21,8 @@ var setJarFile = require('../src/setJarFile');
 var consoleErrors = [];
 var getFtlData, parseInclude, createFile, deleteFiles,
 	parseToFtlData, formatTime, getOneModuleData, getReq,
-	parseFtl, getFtlConsoleErrorString, getConsoleErrors, parseMatchInclude, parseOne;
+	parseFtl, getFtlConsoleErrorString, getConsoleErrors, 
+	parseMatchInclude, parseOne, insertajaxMock;
 var regStartslash = /^(\\|\/).+/;
 exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
@@ -84,7 +85,14 @@ exports = module.exports = function serveFtl(port) {
 				})
 				// 调用java解析ftl
 				.then(function(data) {
-					return parseFtl(res, pathObject.basePath, pathObject.newPath, data, {}, tmpFilePaths);
+					return parseFtl({
+						tmpFilePaths: tmpFilePaths,
+						rootPath: pathObject.basePath, 
+						ftlPath: pathObject.newPath,
+						req: req,
+						res: res,
+						data: data
+					}, !!commandConfig.isMockAjax);
 				})
 				.catch(function(err) {
 					if (typeof err === "string") {
@@ -392,20 +400,28 @@ getReq = function(req, data, webPort) {
 
 /**
  *
- * @param res request请求对象
- * @param rootPath 解析ftl的根路径
- * @param ftlPath ftl的相对路径
+ * @param {object} [opt] [路径合集]
+ * {
+ * 	 @param rootPath 解析ftl的根路径
+ *   @param ftlPath ftl的相对路径
+ *   @param tmpFilePaths 生成的临时ftl的所有路径 (主要是如果这个ftl报错了，需要把路径替换成 真正的flt)
+ * }
  * @param data ftl需要的全局假数据
- * @param option  解析ftl的option
- * @param tmpFilePaths 生成的临时ftl的所有路径 (主要是如果这个ftl报错了，需要把路径替换成 真正的flt)
+ * @param res request请求对象
  * @returns {*}
  */
-parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
+parseFtl = function(opt, isMockAjax) {
 	var cmd;
 	var stdout;
 	var stderr;
+	var option = {};
+	var rootPath = opt.rootPath,
+		ftlPath = opt.ftlPath,
+		tmpFilePaths = opt.tmpFilePaths,
+		res = opt.res,
+		data = opt.data;
 	data = JSON.stringify(data, function(current, value) {
-		if (typeof value == 'object') {
+		if (typeof value === 'object') {
 			for (var key in value) {
 				if (value.hasOwnProperty(key)) {
 					if (value[key] instanceof Date) {
@@ -458,10 +474,17 @@ parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 			var messages = message.split(/\\r\\n/);
 			var consoleError='<script> if (window.console && console.log && console.group) {'+ getFtlConsoleErrorString(messages) + getConsoleErrors() + '}  </script>';
 			reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData += consoleError);
+			//需要ajax mock假数据
+			if (isMockAjax) {
+				finalData = insertajaxMock(finalData);
+			}
 			res.send(finalData);
 		} else {
 			// 没有错误ftl输出为空
 			if (!data.wrongData) {
+				if (isMockAjax) {
+					data.rightData = insertajaxMock(data.rightData);
+				}
 				res.send(data.rightData);
 			} else {
 				res.render("500", {
@@ -471,10 +494,18 @@ parseFtl = function(res, rootPath, ftlPath, data, option, tmpFilePaths) {
 		}
 	});
 };
+//插入ajax假数据
+insertajaxMock = function(fileContent) {
+	var head = "\<head\>";
+	var script = fs.readFileSync(path.join(__dirname, "./parseRemote/setXmlHttpReq.js"), {
+		encoding: "utf8"
+	});
+	return fileContent.replace(head, head + "\r\n<script>" + script + "</script>");	
+};
 //将ftl错误解析后扔到console。log中去
 getFtlConsoleErrorString = function(messages) {
 	var result;
-	result = messages.map(function(val, index, com) {
+	result = messages.map(function(val, index) {
 		var retVal = '', tmp;
 		if (val) {
 			if (val.indexOf("freemarker.log.JDK14LoggerFactory$JDK14Logger") >= 0) {

@@ -3,23 +3,44 @@ var log = require('../log');
 var getProjectConfig = require('../getProjectConfig');
 var request = require("request");
 var Promise = require('bluebird');
+var parsePath = require('../parsePath');
 var getCmdUrl, parseRule, getAjaxData, getFtlData;
-
+var URL = require('url');
 getAjaxData = function(options) {
 	var	req = options.req,
-		res = options.res;
+		res = options.res,
+		query = req.query,
+		mainPage = query.mainPage,
+		ajaxUrl = query.url,
+		visitDomain, tmp;
+	var pathObject = parsePath(mainPage);
+	var urlObject = URL.parse(ajaxUrl);
+	var port = req.app.get("port") || 80;
+	// 找不到分组返回空
+	if (!pathObject) {
+		return res.send("");
+	}
+	if (urlObject.host) {
+		tmp = urlObject.protocol + "\/\/" + urlObject.hostname + urlObject.port === '80' ? "" : (":" + urlObject.port);
+		visitDomain = tmp;
+	} else {
+		port = port === '80' ? "" : (":" + port)
+		visitDomain = req.protocol + ":\/\/" + req.hostname + port;
+	}
 	var url = getCmdUrl({
 		type: "ajax",
-		groupName: options.groupName,
-		branchName: options.branchName,
-		url: options.url,
-		visitDomain: options.visitDomain,
+		groupName: pathObject.groupName,
+		branchName: pathObject.branchName,
+		url: urlObject.path,
+		visitDomain: visitDomain,
 	});
 	if (!url) {
 		log.warning('假数据url获取错误url是:' + options.url);
-		//--------应该返回错误页面
-		return;
+		return res.send("");
 	}
+	urlObject = URL.parse(url);
+	//修改header中得host
+	req.headers.host = urlObject.host;
 	//直接将数据传递过去
 	request({
 		method: req.method,
@@ -116,10 +137,13 @@ parseRule = function(mock, url, visitDomain) {
 				if (reg.test(url)) {
 					if (typeof tmp.redirect === "string") {
 						url = url.replace(reg, tmp.redirect);
+						if (checkUrl.test(url)) {
+							return url;
+						}
 					} else if (tmp.redirect instanceof Function) {
-						nUrl = visitDomain ? tmp.redirect(url) : tmp.redirect(url, visitDomain);
+						nUrl = visitDomain ? tmp.redirect(url, visitDomain) : tmp.redirect(url);
 						if (checkUrl.test(nUrl)) {
-							url = nUrl;
+							return nUrl;
 						}
 					}
 				}

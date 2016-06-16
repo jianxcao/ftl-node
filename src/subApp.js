@@ -6,8 +6,9 @@ var express = require('express'),
 	MyCommand = require('../src/execCommand'),
 	getProjectConfig = require('../src/getProjectConfig'),
 	Promise = require('bluebird'),
-	commandObj = {};
-	config = require('../src/config');
+	commandObj = {},
+	config = require('../src/config'),
+	parseRemote = require('./parseRemote/parseRemoteMock');
 var isEmptyObject = function(obj) {
 	for (var name in obj) {
 		return false;
@@ -191,6 +192,14 @@ app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], function(req, re
 	}
 	res.send("0");
 });
+
+app.all(['/sys/proxyAjax.html'], function(req, res) {
+	parseRemote.getAjaxData({
+		req: req,
+		res: res
+	});
+});
+
 // 内部加载静态文件找不到错误
 app.use(function(req, res, next){
 	res.status(404);
@@ -198,7 +207,6 @@ app.use(function(req, res, next){
 		message: "内部没有找到路径, 文件路径" + req.originalUrl
 	});
 });
-
 // 内部加载静态文件错误
 app.use(function(err, req, res, next) {
 	log.error('内部错误发生错误了  ', err.message);
@@ -207,6 +215,5 @@ app.use(function(err, req, res, next) {
 		message: '内部错误发生错误了  ' + err.message
 	});
 });
-
 
 module.exports = app;

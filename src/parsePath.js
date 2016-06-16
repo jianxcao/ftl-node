@@ -144,10 +144,13 @@ redirectUrl = function(url, groupName, branchName) {
 					if (reg.test(url)) {
 						if (typeof tmp.redirect === "string") {
 							url = url.replace(reg, tmp.redirect);
+							if (checkUrl.test(url)) {
+								return url;
+							}
 						} else if (tmp.redirect instanceof Function) {
 							nUrl = tmp.redirect(url) || "";
 							if (checkUrl.test(nUrl)) {
-								url = nUrl;
+								return nUrl;
 							}
 						}
 					}
