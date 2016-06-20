@@ -38,7 +38,7 @@ var config = {
 			}
 			console.log(queryString);
 			var base =  "http://idoc.ms.netease.com/mock/" +
-            "getMockData.htmluserName=jxcao&requestUrl=";
+            "getMockData.html?userName=jxcao&requestUrl=";
 			console.log(base + domain + path);
 			return base + domain + path;
 		}
