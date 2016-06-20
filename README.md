@@ -47,6 +47,7 @@ ${request.getScheme()}
 
 ## 其他
 [帮助页面](https://github.com/jianxcao/ftl-node/blob/master/static/help.md)
+## [假数据说明](./ftl-node远程假数据调用.md)
 
 ## [更新日志](./updateInfo.md)
 

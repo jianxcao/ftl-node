@@ -61,7 +61,7 @@ module.exports = config;
 
 1. **start** 属性，表示在项目开始的时候调用的命令，即当项目切换到当前分支时，回去找到这个命令并调用，只要是系统的命令都可以
 2. **jarVersion** 控制当前编译ftl的freemarker jar包得版本 内置 2.3.23, 2.3.18，如果想用其他版本，可以跟一个绝对路径 
-3.  **routes** 表示路径的重定向, 当url命中到当前分组的时候，可以通过test属性测试，如果测试通过则可以通过redirect重新定义url，最后解析新返回的url， redirect可以是一个方法，如果是方法应该返回新的url
+3.  **routes** 表示路径的重定向, 当url命中到当前分组的时候，可以通过test属性测试，如果测试通过则可以通过redirect重新定义url，最后解析新返回的url， redirect可以是一个方法，如果是方法应该返回新的绝对地址的url
 4. **isMockFtl** 是否 采用远程假数据
 5. **isMockAjax** 是否接管所有的ajax，采用远程ajax假数据
 6. **mockFtl** ftl假数据调用时使用
@@ -73,11 +73,11 @@ module.exports = config;
 
 > ftl假数据调用通过  ```<#--<#mock "./mock.ftl.js">—>``` 去调用假数据
 >
-> 上方是一句注释代码，只有在ftl node中认识，所以不会影响线上
+> 上方是一句注释代码，只有在ftl-node中认识，所以不会影响线上
 >
-> 路径下可以防止一个js文件，js文件是一个标准的node模块，要求返回一个js对象
+> 假数据可以是一个js文件的路径，js文件是一个标准的node模块，要求返回一个json对象 
 >
-> 返回的js对象将会编译成一个 ftl认识的对象
+> 返回的js对象将会编译成一个 ftl的 对象
 
 ### 远程假数据说明
 
@@ -103,7 +103,7 @@ module.exports = config;
 
 > ajax假数据必须在run.config.js中开启 isMockAjax为true
 >
-> 开启后所有的ajax请求将会被发送到 /___mySystemInner/sys/proxyAjax.html下
+> 开启后所有的ajax请求将会被发送到 **/___mySystemInner/sys/proxyAjax.html**下
 >
 > 该请求有2个参数,url参数和 manPage参数
 >
