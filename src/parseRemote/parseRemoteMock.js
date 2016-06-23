@@ -73,6 +73,7 @@ getFtlData = function(options) {
 					json = JSON.parse(body);
 				} catch(e) {
 					log.warning('解析假数据出现错误请求url:' + url);
+					reject();
 				}
 				if (json) {
 				 	resolve(json);
@@ -124,7 +125,7 @@ getCmdUrl = function(options) {
 		} else {
 			//如果配置的是绝对路径，直接返回
 			if (checkUrl.test(url)) {
-				return url;
+				return url + "?" + options.queryString;
 			}
 			log.warning('没有配置正确地' + type + "假数据规则");
 		}

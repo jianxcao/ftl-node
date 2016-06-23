@@ -19,9 +19,13 @@ var config = {
 	mockFtl: [{
 		test: /.*/,
 		redirect:function(url, queryString) {
-			var base = "http://idoc.ms.netease.com/mock/getMockData.html" +
-                "?userName=jxcao&dateConvert=true&requestUrl=";
-			var domain = "http://g.caipiao.163.com";
+			var base = "http://idoc.ms.netease.com/mock/getMockData.html?userName=jxcao&dateConvert=true&requestUrl=";
+			// var domain = "http://g.caipiao.163.com";
+			var domain = "http://888.163.com";
+			// console.log(base + domain + url);
+			if (/^http/.test(url)) {
+				return url + "?" + queryString;
+			}
 			return base + domain + url;
 		}
 	}],
