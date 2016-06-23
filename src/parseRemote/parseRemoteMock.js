@@ -51,11 +51,16 @@ getAjaxData = function(options) {
 };
 getFtlData = function(options) {
 	return new Promise(function(resolve, reject) {
+		var urls = options.url.split('?');
+		var currentUrl = urls[0];
+		var queryString = urls[1] || "";
+		queryString = queryString.split('#')[0];
 		var url = getCmdUrl({
 			type: "ftl",
 			groupName: options.groupName,
 			branchName: options.branchName,
-			url: options.url
+			url: currentUrl,
+			queryString: queryString
 		});
 		if (!url) {
 			log.warning('假数据url获取错误url是:' + options.url);
@@ -102,6 +107,7 @@ getCmdUrl = function(options) {
 		url = options.url,
 		visitDomain = options.visitDomain;
 	var commandConfig = getProjectConfig(groupName, branchName);
+	var checkUrl = /^http/;
 	var is = commandConfig[{
 		ftl: 'isMockFtl',
 		ajax: "isMockAjax"
@@ -116,6 +122,10 @@ getCmdUrl = function(options) {
 		if (mock && mock.length) {
 			return parseRule(mock, url, visitDomain, options.queryString);
 		} else {
+			//如果配置的是绝对路径，直接返回
+			if (checkUrl.test(url)) {
+				return url;
+			}
 			log.warning('没有配置正确地' + type + "假数据规则");
 		}
 	}
@@ -141,7 +151,7 @@ parseRule = function(mock, url, visitDomain, queryString) {
 							return url;
 						}
 					} else if (tmp.redirect instanceof Function) {
-						nUrl = visitDomain ? tmp.redirect(url, visitDomain, queryString) : tmp.redirect(url);
+						nUrl = visitDomain ? tmp.redirect(url, visitDomain, queryString) : tmp.redirect(url, queryString);
 						if (checkUrl.test(nUrl)) {
 							return nUrl;
 						}

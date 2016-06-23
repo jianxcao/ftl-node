@@ -354,8 +354,11 @@ getOneModuleData = function(options) {
 				consoleErrors.push(err);
 			}
 		});
+	}
+	//如果是url过滤掉参数
+	ext = ext.split('?')[0];
 	//远程假数据
-	} else if (ext === 'html') {
+	if (ext === 'html' || ext === 'do' || ext === 'htm' || ext === "action") {
 		return parseRemote
 		.getFtlData({
 			url: currentPath,

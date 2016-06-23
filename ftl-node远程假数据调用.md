@@ -18,7 +18,7 @@ var config = {
 	isMockFtl: true,
 	mockFtl: [{
 		test: /.*/,
-		redirect:function(url) {
+		redirect:function(url, queryString) {
 			var base = "http://idoc.ms.netease.com/mock/getMockData.html" +
                 "?userName=jxcao&dateConvert=true&requestUrl=";
 			var domain = "http://g.caipiao.163.com";
@@ -93,7 +93,7 @@ module.exports = config;
 >
 > 规则对象  test属性是用来匹配的，可以是一个正则表达式,匹配后将执行redirect属性或方法
 >
-> redirect 为方法的时候，参数是当前配置的url
+> redirect 为方法的时候，参数是当前配置的url,和url的参数
 >
 > redirect执行后，要保证返回的是一个绝对的url，ftl-node 将会去请求该url，该url应该返回一个json数据
 >
