@@ -12,42 +12,41 @@ getAjaxData = function(options) {
 		query = req.query,
 		mainPage = query.mainPage,
 		ajaxUrl = query.url,
-		visitDomain, tmp;
-	var pathObject = parsePath(mainPage);
-	var urlObject = URL.parse(ajaxUrl);
-	var port = req.app.get("port") || 80;
-	// 找不到分组返回空
-	if (!pathObject) {
-		return res.send("");
-	}
-	if (urlObject.host) {
-		visitDomain = urlObject.protocol + "\/\/" + urlObject.hostname + urlObject.port === '80' ? "" : (":" + urlObject.port);
-	} else {
-		port = port === '80' ? "" : (":" + port)
-		visitDomain = req.protocol + ":\/\/" + req.hostname + port;
-	}
-	var url = getCmdUrl({
-		type: "ajax",
-		groupName: pathObject.groupName,
-		branchName: pathObject.branchName,
-		url: urlObject.pathname,
-		queryString: urlObject.query,
-		visitDomain: visitDomain,
+		visitDomain;
+	parsePath(mainPage).then(function(pathObject) {
+		var urlObject = URL.parse(ajaxUrl);
+		var port = req.app.get("port") || 80;
+		if (urlObject.host) {
+			visitDomain = urlObject.protocol + "\/\/" + urlObject.hostname + urlObject.port === '80' ? "" : (":" + urlObject.port);
+		} else {
+			port = port === '80' ? "" : (":" + port)
+			visitDomain = req.protocol + ":\/\/" + req.hostname + port;
+		}
+		var url = getCmdUrl({
+			type: "ajax",
+			groupName: pathObject.groupName,
+			branchName: pathObject.branchName,
+			url: urlObject.pathname,
+			queryString: urlObject.query,
+			visitDomain: visitDomain,
+		});
+		if (!url) {
+			log.warning('假数据url获取错误url是:' + options.url);
+			return res.send("");
+		}
+		urlObject = URL.parse(url);
+		//修改header中得host
+		req.headers.host = urlObject.host;
+		//直接将数据传递过去
+		request({
+			method: req.method,
+			url: url,
+			headers: req.headers
+		})
+		.pipe(res);
+	}, function() {
+		res.send("");
 	});
-	if (!url) {
-		log.warning('假数据url获取错误url是:' + options.url);
-		return res.send("");
-	}
-	urlObject = URL.parse(url);
-	//修改header中得host
-	req.headers.host = urlObject.host;
-	//直接将数据传递过去
-	request({
-		method: req.method,
-		url: url,
-		headers: req.headers
-	})
-	.pipe(res);
 };
 getFtlData = function(options) {
 	return new Promise(function(resolve, reject) {

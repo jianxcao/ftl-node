@@ -3,13 +3,10 @@
 // var escapeHtml = require('escape-html');
 // object对象合并模块
 var merge = require('utils-merge');
-// 解析url模块
-var parseurl = require('parseurl');
 var path = require('path');
 var log = require('../src/log');
 var fs = require('fs');
 var parseRemote = require('./parseRemote/parseRemoteMock');
-var parsePath = require('../src/parsePath');
 var jarFilePath = path.join(__dirname, "../lib/jar/ftl.jar");
 var spawn = require('child_process').spawn;
 var Promise = require('bluebird');
@@ -28,24 +25,19 @@ exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
 	//  重置错误提示
 	consoleErrors = [];
-	var url  = parseurl(req);
-	port = port || req.app.get("port") || 80;
-	var fullUrl = req.protocol + '://' + req.get('host') +  req.path;
-	// 获取路径
-	var pathname = path.normalize(url.pathname);
-	var ext = path.extname(pathname).replace('.', "");
-	var fullPath, pathObject;
-	var webPort = port;
+	var webPort = port || req.app.get("port") || 80;
+	var pathObject = req.pathObject;
+	var ext = path.extname(pathObject.path).replace('.', "");
 	var tmpFilePaths;
-	var commandConfig, jarVersion = "";
+	var jarVersion = "";
 	//  需要在控制台输出的错误
 	//其内的每个元素是一个 object，object包括  message属性和 stack属性
 	ext = ext.toLowerCase();
 	if (ext && ext === "ftl") {
 		try{
-			pathObject = parsePath(fullUrl);
-			if (pathObject && pathObject.groupName && pathObject.branchName) {
-				commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
+			Promise.resolve(pathObject)
+			.then(function(pathObject) {
+				var commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
 				jarVersion = "";
 				if (commandConfig && commandConfig.jarVersion) {
 					jarVersion = commandConfig.jarVersion;
@@ -58,55 +50,64 @@ exports = module.exports = function serveFtl(port) {
 				req.on('end', function () {
 					deleteFiles(tmpFilePaths);
 				});
-				fullPath = pathObject.fullPath;
-				res.location(pathname);
-				res.set('Full-Path', fullPath);
 				tmpFilePaths = [];
+				return {
+					pathObject: pathObject,
+					commandConfig: commandConfig
+				};
 				// 获取全局的ftl假数据
-				getFtlData()
-				// 解析里面所有的include，模拟出假数据
+			})
+			.then(function(result) {
+				return getFtlData()
 				.then(function(data) {
-					return parseInclude({
-						basePath: pathObject.basePath,
-						tmpFilePaths: tmpFilePaths,
-						req: req,
-						res: res,
-						groupName: pathObject.groupName,
-						branchName: pathObject.branchName
-					}, fullPath)
-					.then(function(newFullPath) {
-						pathObject.newPath = newFullPath.replace(pathObject.basePath, "");
-						return data;
-					});
-				})
-				// 获取res中的一些数据
-				.then(function(data) {
-					return getReq(req, data, webPort);
-				})
-				// 调用java解析ftl
-				.then(function(data) {
-					return parseFtl({
-						tmpFilePaths: tmpFilePaths,
-						rootPath: pathObject.basePath, 
-						ftlPath: pathObject.newPath,
-						req: req,
-						res: res,
-						data: data
-					}, !!commandConfig.isMockAjax);
-				})
-				.catch(function(err) {
-					if (typeof err === "string") {
-						err = new Error(err);
-					}
-					next(err);
+					result.data = data;
+					return result;
 				});
-			} else {
-				res.status(404);
-				res.render("404", {
-					message: '没有找到对应的文件,请查看server.json配置文件,当前文件相对路径' +  pathname
+			})
+			// 解析里面所有的include，模拟出假数据
+			.then(function(result) {
+				var pathObject = result.pathObject;
+				return parseInclude({
+					basePath: pathObject.basePath,
+					tmpFilePaths: tmpFilePaths,
+					req: req,
+					res: res,
+					groupName: pathObject.groupName,
+					branchName: pathObject.branchName
+				}, pathObject.fullPath)
+				.then(function(newFullPath) {
+					pathObject.newPath = newFullPath.replace(pathObject.basePath, "");
+					return result;
 				});
-			}
-		}catch(e) {
+			})
+			// 获取res中的一些数据
+			.then(function(result) {
+				return getReq(req, result.data, webPort).then(function(data) {
+					result.data = data;
+					return result;
+				});
+			})
+			// 调用java解析ftl
+			.then(function(result) {
+				var pathObject = result.pathObject;
+				var data = result.data;
+				var commandConfig = result.commandConfig;
+				return parseFtl({
+					tmpFilePaths: tmpFilePaths,
+					rootPath: pathObject.basePath, 
+					ftlPath: pathObject.newPath,
+					req: req,
+					res: res,
+					data: data
+				}, !!commandConfig.isMockAjax);
+			})
+			.catch(function(err) {
+				if (typeof err === "string") {
+					err = new Error(err);
+				}
+				next(err);
+			});
+		} catch(e) {
 			next(e);
 		}
 	} else {
@@ -358,7 +359,7 @@ getOneModuleData = function(options) {
 	//如果是url过滤掉参数
 	ext = ext.split('?')[0];
 	//远程假数据
-	if (ext === 'html' || ext === 'do' || ext === 'htm' || ext === "action") {
+	if (ext === 'html' || ext === 'do' || ext === 'htm' || ext === "action" || ext === "") {
 		return parseRemote
 		.getFtlData({
 			url: currentPath,
@@ -436,15 +437,15 @@ parseFtl = function(opt, isMockAjax) {
 		return value;
 	});
 	ftlPath = ftlPath.replace(/^\\/, "");
-	option = merge({
+	option = {
 		dir: rootPath,
 		path: ftlPath
-	}, option);
+	};
 	option = JSON.stringify(option);
 	cmd = spawn('java', ["-jar", jarFilePath, option, data]);
 	stdout = cmd.stdout;
 	stderr = cmd.stderr;
-	Promise.props({
+	return Promise.props({
 	    rightData: new Promise(function(resolve) {
 				var rightData = "";
 				stdout.on('data', function(chunk) {

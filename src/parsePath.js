@@ -9,9 +9,10 @@ var fs = require('fs');
 var log = require('../src/log');
 var config = require('../src/config');
 var querystring = require('querystring');
+var Promise = require('bluebird');
 var getProjectConfig = require('../src/getProjectConfig');
 var URL = require('url');
-var parsePath , parseBranch, redirectUrl;
+var parsePath, parseOneGroup, parseBranch, parseOneBranch, redirectUrl, execParse, redirectOneUrl;
 
 /**
  * 根据配置文件和当前路径解析出一个合理的文件路径，解析成功则返回文件路径
@@ -24,38 +25,51 @@ parsePath = function(url) {
 	var pathTree = config.get();
 	// 获取路径
 	var host = pathTree.host;
-	var oneGroup, branches, res;
+	var funs =[];
 	if (host && host.length) {
 		for(var i = 0; i < host.length; i++) {
-			oneGroup = host[i];
-			// 如果禁用这个分组直接跳出
-			if (oneGroup.disabled) {
-				continue;
-			}
-			branches = oneGroup.branches;
-			if (branches && branches.length) {
-				// 基础路径
-				for (var k = 0; k < branches.length; k++) {
-					res = parseBranch(branches[k], url, oneGroup.groupName);
-					if (res) {
-						return res;
-					}
-				}
-			}
+			funs.push({
+				fun: parseOneGroup,
+				param: [host[i], url]
+			});
 		}
+		return execParse(funs).then(function(res) {
+			if (!res) {
+				return Promise.reject('没有找到可用的分支');
+			}
+			return res;
+		});
 	} else {
-		throw new Error('请至少配置一个可以用的分组');
+		return Promise.reject('请至少配置一个可以用的分组');
 	}
 };
+
+parseOneGroup = function(oneGroup, url) {
+	var branches, funs;
+	// 如果禁用这个分组直接跳出
+	if (oneGroup.disabled) {
+		return Promise.resolve();
+	}
+	branches = oneGroup.branches;
+	if (branches && branches.length) {
+		funs = [];
+		for (var k = 0; k < branches.length; k++) {
+			funs.push({
+				fun: parseBranch,
+				param: [branches[k], url, oneGroup.groupName]
+			});
+		}
+		return execParse(funs);
+	} else {
+		return Promise.resolve();
+	}
+};
+
 parseBranch = function(branch, url, groupName) {
 	var basePath;
-	var	current,
-		tmp,
-		v, reg, p, codePath,
-		changePathname,
-		exists;
+	var	current;
 	if (branch.disabled) {
-		return;
+		return Promise.resolve();
 	}
 	basePath = branch.basePath || "";
 	var val = [];
@@ -63,7 +77,7 @@ parseBranch = function(branch, url, groupName) {
 		val = branch.val.slice(0);
 	}
 	if (!val.length && !basePath) {
-		return;
+		return Promise.resolve();
 	}
 	//判断当前用户是否已经添加了一个路径表示当前跟路径的路径,并且没有配置虚拟路径
 	var status = val.some(function(current) {
@@ -77,13 +91,27 @@ parseBranch = function(branch, url, groupName) {
 			codePath: './'
 		});
 	}
+	var funs = [];
 	for(var j = 0; j < val.length; j++) {
 		// 获取项目单独的配置，这里可以配置路由重定向
 		current = val[j];
 		if (current.disabled) {
 			continue;
 		}
-		url = redirectUrl(url, groupName, branch.branchName);
+		funs.push({
+			fun: parseOneBranch,
+			param: [basePath, groupName, branch.branchName, current,  url]
+		});
+	}
+	return execParse(funs);
+};
+
+parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl) {
+	var tmp, v, reg, p, codePath,
+		changePathname,
+		exists;
+	return redirectUrl(originalUrl, groupName, branchName)
+	.then(function(url) {
 		changePathname = URL.parse(url).pathname;
 		//如果codePath为空默认为当前子路径
 		codePath = current.codePath || "";
@@ -120,15 +148,17 @@ parseBranch = function(branch, url, groupName) {
 					//ftl相对路径
 					path: changePathname,
 					groupName: groupName,
-					branchName: branch.branchName
+					branchName: branchName,
+					originalUrl: originalUrl,
+					url: url
 				};
 			}
 		}
-	}
+	});
 };
 
 redirectUrl = function(url, groupName, branchName) {
-	var type, reg, tmp, nUrl, checkUrl = /^http.*/;
+	var type, reg, tmp, funs = [];
 	var commandConfig = getProjectConfig(groupName, branchName);
 	if (commandConfig && commandConfig.routes && commandConfig.routes.length) {
 		for(var i = 0, l = commandConfig.routes.length; i < l; i++) {
@@ -140,26 +170,85 @@ redirectUrl = function(url, groupName, branchName) {
 				} else if(tmp.test instanceof RegExp){
 					reg =  tmp.test;
 				}
-				if (reg) {
-					if (reg.test(url)) {
-						if (typeof tmp.redirect === "string") {
-							url = url.replace(reg, tmp.redirect);
-							if (checkUrl.test(url)) {
-								return url;
-							}
-						} else if (tmp.redirect instanceof Function) {
-							nUrl = tmp.redirect(url) || "";
-							if (checkUrl.test(nUrl)) {
-								return nUrl;
-							}
-						}
-					}
+				if (reg && reg.test(url)) {
+					funs.push({
+						fun: redirectOneUrl,
+						param: [url, reg, tmp.redirect]
+					});
 				}
 			}
 		}
 	}
-	return url;
+	return execParse(funs)
+	.then(function(res) {
+		res = res || url;
+		return res;
+	});
 };
+//重定向其中一个url
+redirectOneUrl = function(url, reg, redirect) {
+	var nUrl, checkUrl = /^http.*/;
+	if (typeof redirect === "string") {
+		url = url.replace(reg, redirect);
+		if (checkUrl.test(url)) {
+			return url;
+		}
+	} else if (redirect instanceof Function) {
+		nUrl = redirect(url);
+		//返回的是一个string
+		if (typeof nUrl === 'string') {
+			if (checkUrl.test(nUrl)) {
+				return nUrl;
+			}
+		//返回一个promise对象
+		} else if (nUrl && nUrl.then){
+			return nUrl.then(function(myUrl) {
+				if (checkUrl.test(myUrl)) {
+					return nUrl;
+				} else {
+					return url;
+				}
+			});
+		}
+	}
+	return url;
 
+};
+/**
+ * 按tasks的顺序执行promise
+ * 
+ * @param  {[array]} tasks  [任务列表]
+ * [{
+ * 	fun: fun,
+ * 	param: [param]
+ * }]
+ * @return {[promise]}        [promise]
+ */
+execParse = function(tasks, index) {
+	if (!tasks || !tasks.length) {
+		return Promise.resolve();
+	}
+	if (!index) {
+		index = 0;
+	}
+	var current = tasks[index];
+	var next = tasks[index + 1];
+	var result = current.fun.apply(null, current.param);
+	//不是promise转换成promise
+	if (!result || !result.then) {
+		result = Promise.resolve(result);
+	}
+	return result.then(function(res) {
+		// console.log(res, "res");
+		if (res) {
+			return res;
+		}
+		if (next) {
+			return execParse(tasks, index + 1);
+		} else {
+			return '';
+		}
+	});
+};
+// parsePath.execParse = execParse;
 module.exports = parsePath;
-

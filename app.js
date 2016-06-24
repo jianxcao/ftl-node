@@ -17,6 +17,7 @@ var bodyParser = require('body-parser'),
 	serverDir = require('./src/serverDir'),
 	config = require('./src/config'),
 	serverFtl = require('./src/serverFtl'),
+	parsePageUrl = require('./src/parsePageUrl'),
 	log = require('./src/log'),
 	subApp = require('./src/subApp'),
 	// subApp即内部系统应用的path
@@ -77,6 +78,7 @@ app.set('view engine', 'ejs');
 // 引用子app，内部使用该app
 app.use(innerPath, subApp);
 
+app.use(parsePageUrl());
 // 运用静态文件路径---即生成一个路径表明当前文件路径
 app.use(serverDir());
 // 运用静态文件模块
@@ -84,6 +86,14 @@ app.use(serverStatic());
 // // 运用ftl编译模块，即将ftl编译成html
 app.use(serverFtl(port));
 app.set("port", port);
+
+app.use(function(req, res){
+	res.status(404);
+	res.render("404", {
+		message: "没有找到路径, 文件路径," + req.originalUrl
+	});
+});
+
 app.use(function(err, req, res) {
 	log.error('发生错误了,', err.message);
 	res.status(500);
@@ -92,12 +102,7 @@ app.use(function(err, req, res) {
 	});
 });
 
-app.use(function(req, res){
-	res.status(404);
-	res.render("404", {
-		message: "没有找到路径, 文件路径," + req.originalUrl
-	});
-});
+
 
 server.listen(port, function() {
 	log.info('服务器成功启动', '端口号码', port);

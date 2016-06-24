@@ -4,60 +4,53 @@ var path = require('path');
 var fs = require('fs');
 var Promise = require('bluebird');
 var log = require('../src/log');
-var parsePath = require('../src/parsePath');
-var getFileInfo;
+var getFileInfo, parseDir;
 exports = module.exports = function serveStatic() {
 	return function serveStatic(req, res, next) {
 		// 如果不是get请求或者 是head， 就直接到下一个请求
 		if (req.method !== 'GET' && req.method !== 'HEAD') {
 			return next();
 		}
-		var fullUrl = req.protocol + '://' + req.get("host") + req.path;
-		// 获取路径
-		var absPath, pathObject;
-		try {
-			pathObject = parsePath(fullUrl);
-			if (pathObject && pathObject.fullPath) {
-				absPath = pathObject.fullPath;
-				var status = fs.lstatSync(absPath);
-				if (!status.isDirectory()) {
-					next();
-					return;
-				}
-				// 第一步读取目录下的所有文件的文件名称
-				new Promise(function(resolve, reject) {
-						fs.readdir(absPath, function(err, files) {
-							if (err) {
-								reject(err);
-							} else {
-								resolve(files);
-							}
-						});
-					})
-					// 第三部根据文件名循环遍历得到文件信息
-					.then(function(files) {
-						return getFileInfo(files, absPath);
-						// 第四部渲染页面
-					}).then(function(filesInfo) {
-						res.set('Full-Path', absPath);
-						res.render("list", {
-							url: req.url,
-							data: filesInfo
-						});
-					}).catch(function(e) { // 出错，直接抛出到页面
-						if (typeof(e) === "string") {
-							e = new Error(e);
-						}
-						log.error(e);
-						next(e);
-					});
-			} else {
-				next();
-			}
-		} catch (e) {
-			next(e);
+		var pathObject = req.pathObject;
+		var absPath = pathObject.fullPath;
+		var status = fs.lstatSync(absPath);
+		//不是个文件夹
+		if (!status.isDirectory()) {
+			next();
+			return;
+		} else {
+			return parseDir(res, req, next, absPath);
 		}
 	};
+};
+parseDir = function(res, req, next, absPath) {
+	// 第一步读取目录下的所有文件的文件名称
+	return new Promise(function(resolve, reject) {
+		fs.readdir(absPath, function(err, files) {
+			if (err) {
+				reject(err);
+			} else {
+				resolve(files);
+			}
+		});
+	})
+	// 第三部根据文件名循环遍历得到文件信息
+	.then(function(files) {
+		return getFileInfo(files, absPath);
+		// 第四部渲染页面
+	}).then(function(filesInfo) {
+		res.set('Full-Path', absPath);
+		res.render("list", {
+			url: req.url,
+			data: filesInfo
+		});
+	}).catch(function(e) { // 出错，直接抛出到页面
+		if (typeof(e) === "string") {
+			e = new Error(e);
+		}
+		log.error(e);
+		next(e);
+	});
 };
 /*
  *  读取指定列表的所有文件的文件信息
