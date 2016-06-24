@@ -49,3 +49,6 @@
 ## V1.7.2(2016年06月23日)
 1. 文档更新
 2. 修复在 run.config.js 不配置 mockFtl属性,而传递的是个完整的url时能够请求假数据
+
+## V1.7.2(2016年06月23日)
+1. run.config.js 中得routes中的redirect在为函数的时候支持返回promise
