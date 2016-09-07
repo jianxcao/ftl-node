@@ -1,18 +1,12 @@
 #!/usr/bin/env node
 
-var commandConfig = require('./src/initCommander');
-var express = require('express'),
+var tools = require('./src/tools'),
+	express = require('express'),
 	app = express(),
 	http = require('http'),
 	server = http.createServer(app),
-	notifiy = require('./src/notifiy')(server);
-
-//将通知类放到 app中
-app.set('notifiy', notifiy); 
-
-//将通知放到全局对象中
-global.notifiy = notifiy;
-var bodyParser = require('body-parser'),
+	notifiy = require('./src/notifiy')(server),
+	bodyParser = require('body-parser'),
 	serverStatic = require('./src/serverStatic'),
 	serverDir = require('./src/serverDir'),
 	config = require('./src/config'),
@@ -20,23 +14,32 @@ var bodyParser = require('body-parser'),
 	parsePageUrl = require('./src/parsePageUrl'),
 	log = require('./src/log'),
 	subApp = require('./src/subApp'),
-	// subApp即内部系统应用的path
-	innerPath = '/___mySystemInner',
-	child_process = require('child_process');
 
-var cookieParser = require('cookie-parser');
-var session = require('express-session');
+	childProcess = require('child_process'),
+	cookieParser = require('cookie-parser'),
+	session = require('express-session');
+//bin加载
+require('./src/bin');
 
+//将通知类放到 app中
+app.set('notifiy', notifiy); 
+
+//将通知放到全局对象中
+global.notifiy = notifiy;
+
+ // subApp即内部系统应用的path
+var	innerPath = '/___mySystemInner';
 innerPath = innerPath.replace(/^\/|\/$/, "");
 innerPath = "/" + innerPath;
 
 // 初始化配置
-var port, runCmd;
+var port = +config.get('port') || 80;
 // 设置全局的 cdnurl
 app.locals.baseUrl = innerPath;
 subApp.locals.baseUrl = innerPath;
 app.locals.cdnBaseUrl =  innerPath + "/static";
 subApp.locals.cdnBaseUrl =  innerPath + "/static";
+
 
 app.use(cookieParser());
 
@@ -48,26 +51,6 @@ app.use(session({
 
 // 解析参数
 app.use(bodyParser.urlencoded({ extended: false }));
-if (commandConfig.port) {
-	port = commandConfig.port;
-	config.set('port', port);
-} else {
-	// 通过配置文件获取端口
-	port = config.get("port") || 80;
-}
-runCmd = config.get('runCmd');
-if (commandConfig.runCmd === true) {
-	runCmd = true;
-} else if (commandConfig.runCmd === false){
-	runCmd = false;
-}
-if (runCmd === undefined || runCmd === null) {
-	runCmd = true;
-}
-config.set('runCmd', runCmd);
-
-// 保存配置
-config.save();
 
 app.disable('x-powered-by');
 // 设置模版
@@ -85,6 +68,7 @@ app.use(serverDir());
 app.use(serverStatic());
 // // 运用ftl编译模块，即将ftl编译成html
 app.use(serverFtl(port));
+
 app.set("port", port);
 
 app.use(function(req, res){
@@ -102,12 +86,12 @@ app.use(function(err, req, res) {
 	});
 });
 
-
+server.on('error', tools.error);
 
 server.listen(port, function() {
 	log.info('服务器成功启动', '端口号码', port);
 	// 启动一个默认浏览器打开后台管理页面
-	var cmd, uri = "http://127.0.0.1" + (port == 80 ? "" : ":" + port);
+	var cmd, uri = "http://" + tools.localIps[0] + (port == 80 ? "" : ":" + port);
 	uri += innerPath;
 	uri += "/sys/manager.html";
 	if (process.platform === 'win32') {
@@ -118,6 +102,10 @@ server.listen(port, function() {
 		cmd = 'open';
 	}
 	log.info('后台管理页面打开中');
+	childProcess.exec([cmd, uri].join(' '));
+});
 
-	child_process.exec([cmd, uri].join(' '));
+process.on('uncaughtException', tools.error);
+process.on('exit', function() {
+	log.info('服务器退出');
 });

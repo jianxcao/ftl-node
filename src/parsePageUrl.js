@@ -7,6 +7,7 @@
 var parseurl = require('parseurl');
 var path = require('path');
 var parsePath = require('../src/parsePath');
+var querystring = require('querystring');
 
 exports = module.exports = function parsePageUrl() {
   return function(req, res, next) {
@@ -18,7 +19,7 @@ exports = module.exports = function parsePageUrl() {
 	res.location(pathname);
 	parsePath(fullUrl)
 	.then(function(pathObject) {
-		res.set('Full-Path', pathObject.fullPath);
+		res.set('Full-Path', querystring.escape(pathObject.fullPath));
 		req.pathObject = pathObject;
 		next();
 	}, function(err) {

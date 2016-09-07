@@ -75,7 +75,7 @@ var setJarFile = function(version) {
 			log.info('成功设置jar包，jar包原始路径:' + jarPath);
 		}
 		cachePath =  jarPath;
-		log.debug(jarPath);
+		log.info(jarPath);
 	} else {
 		throw  new Error("查找jar文件出错，jar文件路径: " + jarPath);
 	}

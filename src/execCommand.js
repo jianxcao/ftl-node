@@ -6,7 +6,7 @@ var psTree = require('ps-tree');
 var cmd;
 var iconv = require('iconv-lite');
 var isWin = /^win/.test(process.platform);
-var notifiy = global.notifiy;
+
 var noop =  function() {};
 //执行一个命令
 var execOrder = function(fun) {
@@ -108,6 +108,7 @@ MyCommand.prototype.notifiy = function(type, title, message) {
 	messgeObj.type = type;
 	messgeObj.message = message;
 	messgeObj.title = title;
+	var notifiy = global.notifiy;
 	notifiy.send(JSON.stringify(messgeObj));
 };
 //myCommand = new MyCommand("npm run -s", {

@@ -4,6 +4,7 @@ var path = require('path');
 var fs = require('fs');
 var Promise = require('bluebird');
 var log = require('../src/log');
+var querystring = require('querystring');
 var getFileInfo, parseDir;
 exports = module.exports = function serveStatic() {
 	return function serveStatic(req, res, next) {
@@ -39,7 +40,7 @@ parseDir = function(res, req, next, absPath) {
 		return getFileInfo(files, absPath);
 		// 第四部渲染页面
 	}).then(function(filesInfo) {
-		res.set('Full-Path', absPath);
+		res.set('Full-Path', querystring.escape(absPath));
 		res.render("list", {
 			url: req.url,
 			data: filesInfo

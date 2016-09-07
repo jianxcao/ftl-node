@@ -31,7 +31,7 @@ getAjaxData = function(options) {
 			visitDomain: visitDomain,
 		});
 		if (!url) {
-			log.warning('假数据url获取错误url是:' + options.url);
+			log.warn('假数据url获取错误url是:' + options.url);
 			return res.send("");
 		}
 		urlObject = URL.parse(url);
@@ -62,7 +62,7 @@ getFtlData = function(options) {
 			queryString: queryString
 		});
 		if (!url) {
-			log.warning('假数据url获取错误url是:' + options.url);
+			log.warn('假数据url获取错误url是:' + options.url);
 			reject();
 		}
 		request(url, function(error, response, body) {
@@ -71,7 +71,7 @@ getFtlData = function(options) {
 				try {
 					json = JSON.parse(body);
 				} catch(e) {
-					log.warning('解析假数据出现错误请求url:' + url);
+					log.warn('解析假数据出现错误请求url:' + url);
 					reject();
 				}
 				if (json) {
@@ -79,8 +79,8 @@ getFtlData = function(options) {
 				}
 			} else {
 				reject(error);
-				log.warning(error);
-				log.warning('请求假数据出现错误请求url:' + url);
+				log.warn(error);
+				log.warn('请求假数据出现错误请求url:' + url);
 			}
 		});
 	});
@@ -126,7 +126,7 @@ getCmdUrl = function(options) {
 			if (checkUrl.test(url)) {
 				return url + "?" + options.queryString;
 			}
-			log.warning('没有配置正确地' + type + "假数据规则");
+			log.warn('没有配置正确地' + type + "假数据规则");
 		}
 	}
 };

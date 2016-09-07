@@ -184,7 +184,6 @@ parseOne = function(current, opt, matches, fileContent, dirname) {
 
 //解析一个匹配的 include或者import或者 mock
 parseMatchInclude = function(opt, matches, fileContent, dirname) {
-	// log.debug(matches, '111');
 	var basePath = opt.basePath;
 	var command = matches[2];
 	var currentPath = matches[3];
@@ -197,7 +196,6 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 	}
 	//import和include指令代表要引入ftl
 	if (command === "import" || command === "include") {
-		// log.debug(currentPath, basePath, dirname, regStartslash.test(currentPath));
 		//如果 import和include指令是注释的就不解析
 		if (!matches[1]) {
 			if (regStartslash.test(currentPath)) {
@@ -205,7 +203,6 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 			} else {
 				currentAbsolutePath = path.resolve(dirname, currentPath);
 			}
-			// log.debug(currentAbsolutePath);
 			//更新fullPath
 			return parseInclude(opt, currentAbsolutePath)
 			.then(function(includePath) {

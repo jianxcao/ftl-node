@@ -1,17 +1,17 @@
 var program = require('commander');
 var path  = require('path');
 var	fs = require('fs');
-var pkg;
-var bufData = fs.readFileSync(path.resolve(__dirname, '../package.json'));
-try {
-	pkg = JSON.parse(bufData);
-} catch (e) {
-	throw new Error('读取package.json文件出现错误');
-}
+var pkg = require('../package');
+var config = require('./config');
+var log = require('./log');
 program
 	.version(pkg.version)
+	.option('-v, --version', '版本号码')
 	.option('-p --port <port>', '定义端口', parseInt)
 	.option('-r --run-cmd <command>', "自动运行run.config.js中的start命令", /^(true|false)$/i)
+	.option('-l, --log [item]', 
+		'设置日志级别error, warn, info, verbose, debug, silly', 
+		/^(error|warn|info|verbose|debug|silly)$/i)
 	.on('--help', function() {
 		console.log('  说明:');
 		console.log('');
@@ -54,9 +54,45 @@ program
 		console.log('      但是可以自己增加新的jar包');
 	})
 	.parse(process.argv);
-if (program.runCmd === "true") {
-	program.runCmd = true;
-} else if (program.runCmd === "false") {
-	program.runCmd = false;
-}
-module.exports = program;
+
+var getConfig = function() {
+	//处理成cfg的config
+	var cfg = {};
+	if (program.runCmd === "true" || program.runCmd === true) {
+		cfg.runCmd = true;
+	} else if (program.runCmd === "false") {
+		cfg.runCmd = false;
+	}
+	cfg.port = program.port;
+	if (program !== true) {
+		cfg.logLevel = program.log;
+	}
+	return cfg;
+};
+
+//处理并保存配置
+var detailCfg = function(cfg) {
+	if (cfg.port) {
+		config.set('port', cfg.port);
+	}
+	//保存到本地缓存
+	var runCmd = config.get('runCmd');
+	if (cfg.runCmd !== undefined && cfg.runCmd !== null) {
+		runCmd = cfg.runCmd;
+	}
+	config.set('runCmd', runCmd);
+
+	if (cfg.logLevel) {
+		config.set('logLevel', cfg.logLevel);
+	}
+	var logLevel = config.get('logLevel');
+	//设置当前的log级别
+	if (logLevel) {
+		log.transports.console.level = logLevel;
+	}
+	// 保存配置
+	config.save();
+	return cfg;
+};
+
+module.exports = detailCfg(getConfig());
