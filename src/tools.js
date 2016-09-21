@@ -29,7 +29,7 @@ var getIps = function() {
 		return addresses.length ? addresses[0].address : undefined;
 	}).filter(Boolean);
 	return !all.length ? [] : all;
-}
+};
 
 var localIps =  getIps();
 localIps.push(ip.loopback('ipv4'));

@@ -1,7 +1,6 @@
 var path = require('path');
 var fontsFileExt = ["eot", "svg", "ttf", "woff"];
 var excludeFileExt = ["ftl", "ejs", "jsp"];
-var querystring = require('querystring');
 exports = module.exports = function serveStatic() {
   return function serveStatic(req, res, next) {
 	// 如果不是get请求或者 是head， 就直接到下一个请求
@@ -13,7 +12,7 @@ exports = module.exports = function serveStatic() {
 	if (!~excludeFileExt.indexOf(ext)) {
 		try{
 			var absPath = pathObject.fullPath;
-			var headers = {"Full-Path": querystring.escape(absPath)};
+			var headers = {};
 			// 字体文件
 			if (~fontsFileExt.indexOf(ext)) {
 				headers['Access-Control-Allow-Origin'] = "*";

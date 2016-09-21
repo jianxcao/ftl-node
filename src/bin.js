@@ -2,12 +2,27 @@ var program = require('commander');
 var path  = require('path');
 var	fs = require('fs');
 var pkg = require('../package');
-var config = require('./config');
 var log = require('./log');
+var config = require('./config');
+var catProxy = require('catproxy');
+var prompt = require('prompt');
+var colors = require('colors');
+var main = require('./main');
+var numReg = /^([0-9]){2,}$/;
+var list = function(val){
+	val = val.split(',');
+	val = val.filter( function(current) {
+		return numReg.test(current);
+	});
+	return val.length ? val : undefined;
+};
 program
 	.version(pkg.version)
 	.option('-v, --version', '版本号码')
-	.option('-p --port <port>', '定义端口', parseInt)
+	.option('-a --autoproxy [value]', "自动代理true|false", /^(true|false)$/i)
+	.option('-t, --type [value]', 'http或者https服务器类型, 同时开启2种服务器用all表示', /^(http|https|all)$/i)
+	.option('-p, --port [list]', '代理端口 默认  http: 80, https: 443, 多个端口用，分割第一个表示http，第二个表示https', list)
+	.option('-c, --cert', '生成根证书')
 	.option('-r --run-cmd <command>', "自动运行run.config.js中的start命令", /^(true|false)$/i)
 	.option('-l, --log [item]', 
 		'设置日志级别error, warn, info, verbose, debug, silly', 
@@ -63,36 +78,79 @@ var getConfig = function() {
 	} else if (program.runCmd === "false") {
 		cfg.runCmd = false;
 	}
-	cfg.port = program.port;
-	if (program !== true) {
+	if (typeof program.type === 'string') {
+		cfg.type = program.type;
+	}
+	if (program.port && program.port.length) {
+		cfg.port = program.port;
+	}
+	if (typeof program.log === 'string') {
 		cfg.logLevel = program.log;
 	}
 	return cfg;
 };
 
-//处理并保存配置
-var detailCfg = function(cfg) {
-	if (cfg.port) {
-		config.set('port', cfg.port);
+
+var cert = catProxy.cert;
+//生成证书
+if (program.cert) {
+	if (cert.isRootCertExits()) {
+		prompt.start({noHandleSIGINT: true});
+		prompt.get({
+			properties: {
+				isOverride: {
+					type: 'string',
+					required: true,
+					message: '请输入 y 或者 n',
+					description: colors.green("已经存在跟证书，是否覆盖?"),
+					conform: function(val) {
+						return val === 'yes' || val === 'no' || val === 'n' || val === 'y';
+					}
+				}
+			}
+		}, function (err, result) {
+			if (err) {
+				process.exit(1);
+			} else {
+				if (result.isOverride === 'yes' || result.isOverride === 'y') {
+					cert.setRootCert();
+				}
+				process.exit(0);
+			}
+		});
+	} else {
+		cert.setRootCert();
+		process.exit(0);
 	}
+} else {
+	var cfg = getConfig();
+	config.init();
+	if (cfg.type) {
+		config.set('type', cfg.type);
+	}
+	if (cfg.port && cfg.port.length) {
+		config.set('port', cfg.port[0]);
+		if (cfg.port[1]) {
+			config.set('httpsPort', cfg.port[1]);
+		}
+	}
+
 	//保存到本地缓存
 	var runCmd = config.get('runCmd');
 	if (cfg.runCmd !== undefined && cfg.runCmd !== null) {
 		runCmd = cfg.runCmd;
 	}
 	config.set('runCmd', runCmd);
-
 	if (cfg.logLevel) {
 		config.set('logLevel', cfg.logLevel);
 	}
 	var logLevel = config.get('logLevel');
+	
 	//设置当前的log级别
 	if (logLevel) {
 		log.transports.console.level = logLevel;
 	}
 	// 保存配置
 	config.save();
-	return cfg;
-};
-
-module.exports = detailCfg(getConfig());
+	main();
+}

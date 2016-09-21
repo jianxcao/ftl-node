@@ -4,7 +4,7 @@ var path = require('path');
 var fs = require('fs');
 var Promise = require('bluebird');
 var log = require('../src/log');
-var querystring = require('querystring');
+var url = require('url');
 var getFileInfo, parseDir;
 exports = module.exports = function serveStatic() {
 	return function serveStatic(req, res, next) {
@@ -40,9 +40,8 @@ parseDir = function(res, req, next, absPath) {
 		return getFileInfo(files, absPath);
 		// 第四部渲染页面
 	}).then(function(filesInfo) {
-		res.set('Full-Path', querystring.escape(absPath));
 		res.render("list", {
-			url: req.url,
+			locationUrl: url.parse(req.url),
 			data: filesInfo
 		});
 	}).catch(function(e) { // 出错，直接抛出到页面

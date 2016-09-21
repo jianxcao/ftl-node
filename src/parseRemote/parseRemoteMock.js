@@ -19,7 +19,7 @@ getAjaxData = function(options) {
 		if (urlObject.host) {
 			visitDomain = urlObject.protocol + "\/\/" + urlObject.hostname + urlObject.port === '80' ? "" : (":" + urlObject.port);
 		} else {
-			port = port === '80' ? "" : (":" + port)
+			port = port === '80' ? "" : (":" + port);
 			visitDomain = req.protocol + ":\/\/" + req.hostname + port;
 		}
 		var url = getCmdUrl({

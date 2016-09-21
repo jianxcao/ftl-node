@@ -13,7 +13,8 @@ var configInit = function() {
 	// Windows XP - 'C:\Documents and Settings\User\Application Data'
 	// Linux - '/var/local'
 	// 获取系统临时目录
-	var tmpPath = process.env.APPDATA || (process.platform == 'darwin' ? path.join(process.env.HOME, 'Library/Preferences') : '/var/local');
+	var tmpPath = process.env.APPDATA || 
+	(process.platform === 'darwin' ? path.join(process.env.HOME, 'Library/Preferences') : '/var/local');
 	dirPath = path.resolve(tmpPath, "ftl-node");
 	var exits = fs.existsSync(dirPath);
 	// 目录不存在
@@ -68,7 +69,7 @@ exports.set = function(key, val) {
 	key = keys[keys.length - 1];
 	if (keys.length > 1) {
 		for(var i = 0; i < keys.length - 1; i++) {
-			if (typeof tmp == "object") {
+			if (typeof tmp === "object") {
 				if (tmp[keys[i]]) {
 					tmp = tmp[keys[i]];
 				} else  {
@@ -76,8 +77,8 @@ exports.set = function(key, val) {
 					return false;
 				}
 			} else {
-				return false;
 				tmp = null;
+				return false;
 			}
 		}
 	}
@@ -100,7 +101,7 @@ exports.del = function(key) {
 	key = keys[keys.length - 1];
 	if (keys.length > 1) {
 		for(var i = 0; i < keys.length - 1; i++) {
-			if (typeof tmp == "object") {
+			if (typeof tmp === "object") {
 				if (tmp[keys[i]]) {
 					tmp = tmp[keys[i]];
 				} else  {
@@ -108,8 +109,8 @@ exports.del = function(key) {
 					return false;
 				}
 			} else {
-				return false;
 				tmp = null;
+				return false;
 			}
 		}
 	}
@@ -130,4 +131,4 @@ exports.save = function() {
 		throw e;
 	}
 };
-configInit();
+exports.init = configInit;

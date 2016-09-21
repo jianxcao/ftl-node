@@ -60,7 +60,7 @@ var findGroup = function(groupName) {
 	if (host && host.length && groupName) {
 		for (var i = 0, l = host.length; i < l; i++) {
 			var group = host[i];
-			if (group.groupName && group.groupName == groupName) {
+			if (group.groupName && group.groupName === groupName) {
 				retVal = {
 					group: group,
 					index: i
@@ -82,7 +82,7 @@ var findBranch = function(groupName, branchName) {
 			if (group && group.branches && group.branches.length) {
 				for (var i = 0, l = group.branches.length; i < l; i ++) {
 					var branch = group.branches[i];
-					if (branch.branchName && branch.branchName == branchName) {
+					if (branch.branchName && branch.branchName === branchName) {
 						retVal = {
 							group: group,
 							branch: branch,

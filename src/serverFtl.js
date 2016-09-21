@@ -15,6 +15,7 @@ var merge = require('utils-merge');
 var fse = require('fs-extra');
 var getProjectConfig = require('../src/getProjectConfig');
 var setJarFile = require('../src/setJarFile');
+var url = require('url');
 var consoleErrors = [];
 var getFtlData, parseInclude, createFile, deleteFiles,
 	parseToFtlData, formatTime, getOneModuleData, getReq,
@@ -25,11 +26,17 @@ exports = module.exports = function serveFtl(port) {
   return function serveFtl(req, res, next) {
 	//  重置错误提示
 	consoleErrors = [];
-	var webPort = port || req.app.get("port") || 80;
+	var isSecure = req.connection.encrypted || req.connection.pai;
+	var host = req.headers.host;
+	var protocol = !!isSecure ? "https" : 'http';
+	var fullUrl = /^http.*/.test(req.url) ? req.url : (protocol + '://' + host + req.url);
+	var	urlObject = url.parse(fullUrl);
+	var webPort = urlObject.port || (protocol === "http" ? '80' : '443');
 	var pathObject = req.pathObject;
-	var ext = path.extname(pathObject.path).replace('.', "");
+	var ext = path.extname(pathObject.path).slice(1);
 	var tmpFilePaths;
 	var jarVersion = "";
+	webPort = +webPort;
 	//  需要在控制台输出的错误
 	//其内的每个元素是一个 object，object包括  message属性和 stack属性
 	ext = ext.toLowerCase();
