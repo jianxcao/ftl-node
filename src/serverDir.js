@@ -15,7 +15,7 @@ exports = module.exports = function serveStatic() {
 		var pathObject = req.pathObject;
 		var absPath = pathObject.fullPath;
 		var status = fs.lstatSync(absPath);
-		//不是个文件夹
+		// 不是个文件夹
 		if (!status.isDirectory()) {
 			next();
 			return;

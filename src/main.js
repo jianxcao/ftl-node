@@ -41,7 +41,7 @@ var SNICallback = function(servername, callback) {
 	}
 };
 
-//错误流程
+// 错误流程
 var setErr = function() {
 	app.use(function(req, res){
 		res.status(404);
@@ -59,7 +59,7 @@ var setErr = function() {
 	});
 };
 
-//通用流程
+// 通用流程
 var comInit = function(cfg) {
 	app.disable('x-powered-by');
 	app.locals.baseUrl = "";
@@ -107,7 +107,7 @@ var openUi = function(port) {
 	childProcess.exec([cmd, uri].join(' '));
 };
 
-//创建ui界面
+// 创建ui界面
 var createUi = function(cfg, autoProxyUrl) {
 	var server = http.createServer();
 	var my = subApp(server, autoProxyUrl);
@@ -125,7 +125,7 @@ var createUi = function(cfg, autoProxyUrl) {
 	return server;
 };
 
-//创建服务器
+// 创建服务器
 var createServer = function(cfg) {
 	var servers = [];
 	var type = cfg.type;
@@ -146,7 +146,7 @@ var createServer = function(cfg) {
 	servers.forEach(function(server, index) {
 		var serverType = server instanceof  http.Server ? 'http' : 'https';
 		var p = serverType === 'http' ? port : httpsPort;
-		//启动出错，直接退出
+		// 启动出错，直接退出
 		server.on('error', function(err) {
 			tools.error(err);
 			process.exit(1);
@@ -186,30 +186,30 @@ var createAutoProxy = function(cfg) {
 			log: cfg.logLevel
 		}, null, false);
 		proxy.use(parsePageUrl());
-		//没有出错的情况下
+		// 没有出错的情况下
 		proxy.use(function(req, res) {
 			app(req, res);	
 		});
 		proxy.use(function(err, req, res, next) {
-			//这里的err指得时parsePath失败
+			// 这里的err指得时parsePath失败
 			var	headers = req.headers,
 				host = req.headers.host,
 				hostname = host.split(':')[0],
 				urlObject = url.parse(req.url),
 				pathname = urlObject.pathname,	
 				extname = path.extname(pathname);
-			//本机静态资源
+			// 本机静态资源
 			if (isServerStatic.test(pathname)) {
 				app(req, res);
 			}
-			//找不到文件
+			// 找不到文件
 			if (err && extname !== 'ftl' && !net.isIP(hostname) && hostname !== 'localhost') {
 				next();
 			} else {
 				if (err) {
 					next(err);
 				} else {
-					//回去走老流程
+					// 回去走老流程
 					app(req, res);
 				}
 			}
@@ -227,7 +227,7 @@ var createAutoProxy = function(cfg) {
 };
 
 module.exports = exports = function() {
-	//读取缓存配置文件
+	// 读取缓存配置文件
 	var fileCfg = {};
 	['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel']
 	.forEach(function(current) {

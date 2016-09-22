@@ -1,5 +1,5 @@
 define(["jquery", "tpl"], function($) {
-	//各种提示方法类
+	// 各种提示方法类
 	return {
 		/**
 		 *  打开一个提示

@@ -26,7 +26,7 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 			if (data.host && data.host.length) {
 				host = data.host.slice(0);
 			}
-			//将折叠信息注入数组，当成一个属性
+			// 将折叠信息注入数组，当成一个属性
 			host.foldInfo = this.configModel.foldInfo;
 			// 初始化左侧菜单
 			return tplToHtml("/tpl/manager-menu.tpl", host)
@@ -182,7 +182,7 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 				createGroup = $('#create-group'),
 				createBranch = $('#create-branch'),
 				panelEle = this.cache.panelEle;
-			//弹出分组弹窗
+			// 弹出分组弹窗
 			$('.panel-heading').delegate('.new-group', 'click', function(e) {
 				$('.group-name', createGroup).val("");
 				// 显示创建分组对话框
@@ -502,7 +502,7 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 				configModel = this.configModel,
 				data, tmp,
 				allFormWrap = panelEle.find('.form-wrap');
-			current = allFormWrap.filter("[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
+			var current = allFormWrap.filter("[data-branch-name='" + branchName + "'][data-group-name='" + groupName + "']");
 			if (current.length) {
 				allFormWrap.hide();
 				current.show();
@@ -546,7 +546,7 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 				})
 				.then(function() {
 					// 检测项目根目录是否配置run.config.js并且该js 被node require后没有任何问题
-					//则置入 start 和 stop按钮
+					// 则置入 start 和 stop按钮
 					return command.setCommandBtn(groupName, branchName);
 				});
 			}
@@ -598,7 +598,7 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 		// 保存
 		initSave: function() {
 			var save = $('.save').click(function(e) {
-				//先将当前面版中的数据更新到setData中去
+				// 先将当前面版中的数据更新到setData中去
 				manager.setPanelData();
 				manager.configModel.save();
 			});

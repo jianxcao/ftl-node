@@ -79,13 +79,13 @@ parseBranch = function(branch, url, groupName) {
 	if (!val.length && !basePath) {
 		return Promise.resolve();
 	}
-	//判断当前用户是否已经添加了一个路径表示当前跟路径的路径,并且没有配置虚拟路径
+	// 判断当前用户是否已经添加了一个路径表示当前跟路径的路径,并且没有配置虚拟路径
 	var status = val.some(function(current) {
 		if (path.resolve(basePath, (current.codePath || '')) === basePath &&  !current.virtualPath) {
 			return true;
 		}
 	});
-	//如果没有帮用户添加一个--添加到队列的前面
+	// 如果没有帮用户添加一个--添加到队列的前面
 	if (!status) {
 		val.push({
 			codePath: './'
@@ -113,7 +113,7 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 	return redirectUrl(originalUrl, groupName, branchName)
 	.then(function(url) {
 		changePathname = URL.parse(url).pathname;
-		//如果codePath为空默认为当前子路径
+		// 如果codePath为空默认为当前子路径
 		codePath = current.codePath || "";
 		// 将基础路径和 代码路径合并
 		codePath = path.resolve(basePath, codePath);
@@ -139,13 +139,13 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 			exists = fs.existsSync(p);
 			if (exists) {
 				return {
-					//ftl全路径
+					// ftl全路径
 					fullPath: p,
-					//用户设置的基础路径
+					// 用户设置的基础路径
 					userBasePath: basePath,
-					//当前ftl文件的基础路径
+					// 当前ftl文件的基础路径
 					basePath: codePath,
-					//ftl相对路径
+					// ftl相对路径
 					path: changePathname,
 					groupName: groupName,
 					branchName: branchName,
@@ -185,7 +185,7 @@ redirectUrl = function(url, groupName, branchName) {
 		return res;
 	});
 };
-//重定向其中一个url
+// 重定向其中一个url
 redirectOneUrl = function(url, reg, redirect) {
 	var nUrl, checkUrl = /^http.*/;
 	if (typeof redirect === "string") {
@@ -195,12 +195,12 @@ redirectOneUrl = function(url, reg, redirect) {
 		}
 	} else if (redirect instanceof Function) {
 		nUrl = redirect(url);
-		//返回的是一个string
+		// 返回的是一个string
 		if (typeof nUrl === 'string') {
 			if (checkUrl.test(nUrl)) {
 				return nUrl;
 			}
-		//返回一个promise对象
+		// 返回一个promise对象
 		} else if (nUrl && nUrl.then){
 			return nUrl.then(function(myUrl) {
 				if (checkUrl.test(myUrl)) {
@@ -234,7 +234,7 @@ execParse = function(tasks, index) {
 	var current = tasks[index];
 	var next = tasks[index + 1];
 	var result = current.fun.apply(null, current.param);
-	//不是promise转换成promise
+	// 不是promise转换成promise
 	if (!result || !result.then) {
 		result = Promise.resolve(result);
 	}

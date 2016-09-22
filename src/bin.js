@@ -72,7 +72,7 @@ program
 	.parse(process.argv);
 
 var getConfig = function() {
-	//处理成cfg的config
+	// 处理成cfg的config
 	var cfg = {};
 	if (program.runCmd === "true" || program.runCmd === true) {
 		cfg.runCmd = true;
@@ -100,7 +100,7 @@ var getConfig = function() {
 
 
 var cert = catProxy.cert;
-//生成证书
+// 生成证书
 if (program.cert) {
 	if (cert.isRootCertExits()) {
 		prompt.start({noHandleSIGINT: true});
@@ -132,7 +132,7 @@ if (program.cert) {
 	}
 } else {
 	var cfg = getConfig();
-	//初始化
+	// 初始化
 	config.init();
 	if (cfg.type) {
 		config.set('type', cfg.type);
@@ -149,7 +149,7 @@ if (program.cert) {
 	if (typeof cfg.autoProxy === 'boolean') {
 		config.set('autoProxy', cfg.autoProxy);
 	}
-	//保存到本地缓存
+	// 保存到本地缓存
 	var runCmd = config.get('runCmd');
 	if (cfg.runCmd !== undefined && cfg.runCmd !== null) {
 		runCmd = cfg.runCmd;
@@ -161,7 +161,7 @@ if (program.cert) {
 	}
 	var logLevel = config.get('logLevel');
 	
-	//设置当前的log级别
+	// 设置当前的log级别
 	if (logLevel) {
 		log.transports.console.level = logLevel;
 	}

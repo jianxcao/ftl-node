@@ -1,5 +1,5 @@
 define(["js/infoTip", "config"], function(infoTip, config) {
-	//命令接口，可以调用当前分组的命令
+	// 命令接口，可以调用当前分组的命令
 	return {
 		// 发送执行run.config.js中的命令
 		/**
@@ -13,7 +13,7 @@ define(["js/infoTip", "config"], function(infoTip, config) {
 		 * @pram isTip true 则提示否则 不给提示，仅仅调用
 		 * @returns promise
 		 */
-		/*stats解析 0表示系统错误
+		/* stats解析 0表示系统错误
 		 *1开头表示 启动命令的结果
 		 * 11: 运行命令出错
 		 * 12: 命令已经在运行中
@@ -72,9 +72,9 @@ define(["js/infoTip", "config"], function(infoTip, config) {
 		checkCommand: function(groupName, branchName) {
 			var d = $.Deferred();
 			$.post(config.baseUrl + "/sys/is_have_shell_control.html", {
-					groupName: groupName,
-					branchName: branchName
-				})
+				groupName: groupName,
+				branchName: branchName
+			})
 				.always(function(txt) {
 					if (txt === "1" || txt === "0") {
 						d.resolve(txt === "1" ? true : false);

@@ -12,9 +12,9 @@ var parseJarPath = function() {
 		var testFile = /^freemarker\d+\.\d+\.\d+\.jar/;
 		var filterFile = /[^\d\.]/g;
 		var defaultVersion = "2.3.18";
-		//读取basePath下所有的文件的文件名称
+		// 读取basePath下所有的文件的文件名称
 		var fileInfos = fs.readdirSync(basePath);
-		//过滤文件，只要freemarker的jar包的文件，不要不带版本号码的
+		// 过滤文件，只要freemarker的jar包的文件，不要不带版本号码的
 		fileInfos = fileInfos.filter(function(current) {
 			return testFile.test(current);
 		});
@@ -47,16 +47,16 @@ var setJarFile = function(version) {
 	var jarPath = "";
 	var versions = result.versions;
 	var currentVersion = "";
-	//查找lib/jar下的jar包是否可以使用
+	// 查找lib/jar下的jar包是否可以使用
 	for(var i = 0; i < versions.length; i++) {
 		if (versions[i] === version) {
 			currentVersion = versions[i];
 			break;
 		}
 	}
-	//上面的规则没有找到jar，尝试version用作路径，看是否存在jar包路径
+	// 上面的规则没有找到jar，尝试version用作路径，看是否存在jar包路径
 	if (!currentVersion && version) {
-		//加入直接是一个文件路径
+		// 加入直接是一个文件路径
 		if (fs.existsSync(path.resolve(version))) {
 			jarPath = version;
 			currentVersion = true;

@@ -1,13 +1,13 @@
 define(["jquery", "config", "js/infoTip", "js/command"], function($, config, infoTip, command) {
-	//用来记录上次的分组信息--内部使用
+	// 用来记录上次的分组信息--内部使用
 	var oldData =  "";
 	var result = {
 		// 表示与后端同步的分组信息
 		data: {
 			host: []
 		},
-		//折叠信息，这个存储在本地localstroage中
-		//为键值对 健是  groupName，true表示折叠，没有表示 不折叠
+		// 折叠信息，这个存储在本地localstroage中
+		// 为键值对 健是  groupName，true表示折叠，没有表示 不折叠
 		foldInfo: {},
 		// 找到一个分组
 		findGroup: function(groupName) {
@@ -80,8 +80,8 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 					}
 					// 更新缓存数据
 					oldData = strData;
-					//保存的时候需要将无用的 fold信息删除掉
-					//主要是点击删除的时候，如果本地存储中有这条数据同时也要删除
+					// 保存的时候需要将无用的 fold信息删除掉
+					// 主要是点击删除的时候，如果本地存储中有这条数据同时也要删除
 					var host = data.host, key;
 					var testInfo =  {};
 					for(key in com.foldInfo) {
@@ -89,7 +89,7 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 					}
 					if (host.length) {
 						$.each(host, function(i, current) {
-							//如果存在这个键
+							// 如果存在这个键
 							if (testInfo[current.groupName] === false) {
 								testInfo[current.groupName] = true;
 							}
@@ -110,9 +110,9 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 				infoTip.wrongToast("系统忙，请稍后在试试");
 			});
 		},
-		//设置折叠信息，
-		//只记折叠住的，不折叠的不记住
-		//发生改变立马同步本地存储
+		// 设置折叠信息，
+		// 只记折叠住的，不折叠的不记住
+		// 发生改变立马同步本地存储
 		setFoldInfo: function(groupName, isFlod) {
 			if (groupName) {
 				if (isFlod === true) {
@@ -129,14 +129,14 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 			return !!this.foldInfo[groupName];		
 		}
 	};
-	//将一个json值放入LS中
+	// 将一个json值放入LS中
 	var setJSONToLS = function(key, data) {
 		try {
 			localStorage.setItem(key, JSON.stringify(data));
 		} catch(e) {
 		}
 	};
-	//获取折叠信息
+	// 获取折叠信息
 	var initFoldInfo = function() {
 		var info = localStorage.getItem('foldInfo');
 		if (info) {

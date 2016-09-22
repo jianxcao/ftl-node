@@ -3,8 +3,17 @@
 		"browser": true,
 		"amd": true,
 		"jquery": true,
-        "node": true
+ 		"es6": true,
+    "node": true
 	},
+  "parserOptions": {
+    "ecmaFeatures": {
+      "experimentalObjectRestSpread": true,
+      "jsx": true
+    },
+    "sourceType": "module"
+  },
+	"parser": "babel-eslint",
 	"rules": {
 		// 允许出现alert, prompt 和 confirm
 		"no-alert": 0,
@@ -16,7 +25,7 @@
 		"no-debugger": 2,
 
 		// 禁止不写分号
-		"semi": [2, "always"],
+		"semi": [1, "always"],
 
 		// 禁止出现tab之外的缩进
 		"indent": [2, "tab"],
@@ -61,16 +70,16 @@
 		"no-return-assign": 1,
 
 		// 建议代码列数不能超过120行
-		"max-len": [1, 120],
+		"max-len": [1, 180],
 
 		// 建议启用严格模式
 		"global-strict": 0,
-		"strict": 0
+		"strict": 0,
 
 		// 建议使用单引号
-		// "quotes": [1, "single"],
+		"quotes": [0, "single"],
 
 		// 建议注释符要有空白隔开
-		// "spaced-comment": [1, "always"]
+		"spaced-comment": [1, "always"]
 	}
 }

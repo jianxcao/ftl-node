@@ -35,9 +35,9 @@ getAjaxData = function(options) {
 			return res.send("");
 		}
 		urlObject = URL.parse(url);
-		//修改header中得host
+		// 修改header中得host
 		req.headers.host = urlObject.host;
-		//直接将数据传递过去
+		// 直接将数据传递过去
 		request({
 			method: req.method,
 			url: url,
@@ -75,7 +75,7 @@ getFtlData = function(options) {
 					reject();
 				}
 				if (json) {
-				 	resolve(json);
+					resolve(json);
 				}
 			} else {
 				reject(error);
@@ -116,13 +116,13 @@ getCmdUrl = function(options) {
 		ftl: 'mockFtl',
 		ajax: "mockAjax"
 	}[type]];
-	//配置需要配置假数据
+	// 配置需要配置假数据
 	if (is) {
-		//取到mock假数据的规则假数据规则的结构
+		// 取到mock假数据的规则假数据规则的结构
 		if (mock && mock.length) {
 			return parseRule(mock, url, visitDomain, options.queryString);
 		} else {
-			//如果配置的是绝对路径，直接返回
+			// 如果配置的是绝对路径，直接返回
 			if (checkUrl.test(url)) {
 				return url + "?" + options.queryString;
 			}
@@ -130,7 +130,7 @@ getCmdUrl = function(options) {
 		}
 	}
 };
-//解析规则
+// 解析规则
 parseRule = function(mock, url, visitDomain, queryString) {
 	var tmp, type, reg, checkUrl = /^http/,
 		nUrl;

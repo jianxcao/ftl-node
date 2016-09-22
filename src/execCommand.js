@@ -1,5 +1,5 @@
 var cp = require('child_process');
-//var spawn = cp.spawn;
+// var spawn = cp.spawn;
 var exec = cp.exec;
 var log = require('../src/log');
 var psTree = require('ps-tree');
@@ -8,7 +8,7 @@ var iconv = require('iconv-lite');
 var isWin = /^win/.test(process.platform);
 
 var noop =  function() {};
-//执行一个命令
+// 执行一个命令
 var execOrder = function(fun) {
 	var com = this;
 	if (this.runing) {
@@ -112,11 +112,11 @@ MyCommand.prototype.notifiy = function(type, title, message) {
 };
 exports = module.exports = MyCommand;
 
-//myCommand = new MyCommand("npm run -s", {
+// myCommand = new MyCommand("npm run -s", {
 //	cwd: "D:\\gitLab\\fe"
-//});
-//myCommand.exec();
+// });
+// myCommand.exec();
 
-//setTimeout(function() {
+// setTimeout(function() {
 //	myCommand.exit();
-//}, 5000);
+// }, 5000);

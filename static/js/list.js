@@ -1,5 +1,5 @@
 (function($) {
-	//列表页面显示所有的 文件列表
+	// 列表页面显示所有的 文件列表
 	var headerTitle = $('#headTitle');
 	var headBody = $('#headBody');
 	var listData = window.listData;

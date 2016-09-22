@@ -8,21 +8,21 @@
 	if (win.XMLHttpRequest) {
 		proto = win.XMLHttpRequest.prototype;
 	}
-	//低版本ie系列
+	// 低版本ie系列
 	if (win.ActiveXObject) {
 		proto = win.ActiveXObject.prototype;
 	}
-	//保存open方法
+	// 保存open方法
 	var open = proto.open;
-	//覆盖open方法
+	// 覆盖open方法
 	proto.open = function (type, url, async, username, password) {
-		//修改url发送到指定位置
+		// 修改url发送到指定位置
 		url = win.location.protocol + "\/\/" + 
 		win.location.host + 
 		'/___mySystemInner/sys/proxyAjax.html?url=' + 
 		encodeURIComponent(url) +
 		"&mainPage=" + window.location.href;
-		//继续发送
+		// 继续发送
 		open.call(this, type, url, async, username, password);
 	};
 })(window);

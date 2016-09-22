@@ -23,7 +23,7 @@ var getFtlData, parseInclude, createFile, deleteFiles,
 	parseMatchInclude, parseOne, insertajaxMock;
 var regStartslash = /^(\\|\/).+/;
 exports = module.exports = function serveFtl(port) {
-  return function serveFtl(req, res, next) {
+  	return function serveFtl(req, res, next) {
 	//  重置错误提示
 	consoleErrors = [];
 	var isSecure = req.connection.encrypted || req.connection.pai;
@@ -38,7 +38,7 @@ exports = module.exports = function serveFtl(port) {
 	var jarVersion = "";
 	webPort = +webPort;
 	//  需要在控制台输出的错误
-	//其内的每个元素是一个 object，object包括  message属性和 stack属性
+	// 其内的每个元素是一个 object，object包括  message属性和 stack属性
 	ext = ext.toLowerCase();
 	if (ext && ext === "ftl") {
 		try{
@@ -130,7 +130,7 @@ getFtlData = function() {
 	});
 };
 
-/**解析所给当前文件路径中所有关于并返回数组表示当前页面解析到的地址和类型
+/** 解析所给当前文件路径中所有关于并返回数组表示当前页面解析到的地址和类型
  * <#include "../../inc/core.ftl">
  * <#import "../dhxy2013/inc/baseModule.ftl" as lottery>
  * <#mock "../dhxy2013/inc/baseModule.js">
@@ -146,7 +146,7 @@ getFtlData = function() {
 parseInclude = function(opt, fullPath) {
 	return new Promise(function(resolve) {
 		opt.tmpFilePaths = opt.tmpFilePaths || [];
-		var	tmpFilePaths = opt.tmpFilePaths;//临时文件目录
+		var	tmpFilePaths = opt.tmpFilePaths;// 临时文件目录
 		// 如果创建新的文件并替换则会产生一个新的path
 		var newPath;
 		var pathResult = path.parse(fullPath);
@@ -162,7 +162,7 @@ parseInclude = function(opt, fullPath) {
 				p = parseOne(p, opt, one, fileContent, dirname);
 			}
 			p = p.then(function(newFileContent) {
-				//文件内容需要发生变化
+				// 文件内容需要发生变化
 				if (newFileContent !== fileContent) {
 					newPath = path.join(dirname, pathResult.name + "__tmp" + new Date().getTime() + pathResult.ext);
 					tmpFilePaths.push(newPath);
@@ -189,7 +189,7 @@ parseOne = function(current, opt, matches, fileContent, dirname) {
 	});
 };
 
-//解析一个匹配的 include或者import或者 mock
+// 解析一个匹配的 include或者import或者 mock
 parseMatchInclude = function(opt, matches, fileContent, dirname) {
 	var basePath = opt.basePath;
 	var command = matches[2];
@@ -197,25 +197,25 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 	var currentAbsolutePath;
 	var tmp;
 	var bian = /^\$\{.*\}$/;
-	//存在路径和命令，并且路径不是动态的路径
+	// 存在路径和命令，并且路径不是动态的路径
 	if (!command || !currentPath || bian.test(currentPath)) {
 		return Promise.resolve(fileContent);
 	}
-	//import和include指令代表要引入ftl
+	// import和include指令代表要引入ftl
 	if (command === "import" || command === "include") {
-		//如果 import和include指令是注释的就不解析
+		// 如果 import和include指令是注释的就不解析
 		if (!matches[1]) {
 			if (regStartslash.test(currentPath)) {
 				currentAbsolutePath = path.join(basePath, currentPath);
 			} else {
 				currentAbsolutePath = path.resolve(dirname, currentPath);
 			}
-			//更新fullPath
+			// 更新fullPath
 			return parseInclude(opt, currentAbsolutePath)
 			.then(function(includePath) {
-				//path发生变化，证明引入的ftl中有假数据
+				// path发生变化，证明引入的ftl中有假数据
 				if (includePath !== currentAbsolutePath) {
-					//用生成的临时文件代替当前文件路径
+					// 用生成的临时文件代替当前文件路径
 					tmp = matches[0].replace(currentPath, path.relative(dirname, includePath));
 					tmp = tmp.replace(/\\/g, "/");
 					fileContent = fileContent.replace(matches[0], tmp);
@@ -235,7 +235,7 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 			groupName: opt.groupName,
 			branchName: opt.branchName
 		})
-		//成功或者是把都返回数据
+		// 成功或者是把都返回数据
 		.then(function(data) {
 			var dataString = parseToFtlData(data);
 			return fileContent.replace(matches[0], dataString);
@@ -252,7 +252,7 @@ createFile = function(content, filePath) {
 		log.error(err);
 	}
 };
-//删除文件
+// 删除文件
 deleteFiles = function(filePaths) {
 	try{
 		if (filePaths && filePaths.length) {
@@ -298,7 +298,7 @@ parseToFtlData = function(data) {
 	}
 	return html.join('');
 };
-//格式化日期
+// 格式化日期
 formatTime = function(timeNum, fmt) {
 	timeNum = +timeNum;
 	if (isNaN(timeNum)) {
@@ -306,13 +306,13 @@ formatTime = function(timeNum, fmt) {
 	}
 	var dd = new Date(timeNum);
 	var o = {
-		"M+": dd.getMonth() + 1, //月份 
-		"d+": dd.getDate(), //日 
-		"h+|H+": dd.getHours(), //小时 
-		"m+": dd.getMinutes(), //分 
-		"s+": dd.getSeconds(), //秒 
-		"q+": Math.floor((dd.getMonth() + 3) / 3), //季度 
-		"S": dd.getMilliseconds() //毫秒 
+		"M+": dd.getMonth() + 1, // 月份 
+		"d+": dd.getDate(), // 日 
+		"h+|H+": dd.getHours(), // 小时 
+		"m+": dd.getMinutes(), // 分 
+		"s+": dd.getSeconds(), // 秒 
+		"q+": Math.floor((dd.getMonth() + 3) / 3), // 季度 
+		"S": dd.getMilliseconds() // 毫秒 
 	};
 	if (/(y+)/.test(fmt)) {
 		fmt = fmt.replace(RegExp.$1, (dd.getFullYear() + "").substring(4 - RegExp.$1.length));
@@ -324,7 +324,7 @@ formatTime = function(timeNum, fmt) {
 	}
 	return fmt;
 };
-//获取引入的假数据
+// 获取引入的假数据
 getOneModuleData = function(options) {
 	var dirname = options.dirname,
 		currentPath = options.currentPath,
@@ -334,12 +334,12 @@ getOneModuleData = function(options) {
 		branchName = options.branchName;
 	var data = {};
 	var ext =  path.extname(currentPath).replace('.', "");
-	//js假数据
+	// js假数据
 	if (ext === 'js') {
 		return new Promise(function(resolve) {
 			var fullPath = path.resolve(dirname, currentPath);
 			try{
-				//如果当前模块存在就删除当前模块的缓存
+				// 如果当前模块存在就删除当前模块的缓存
 				if (require.cache && require.cache[fullPath]) {
 					delete  require.cache[fullPath];
 				}
@@ -352,7 +352,7 @@ getOneModuleData = function(options) {
 				}
 				resolve(data);
 			} catch(err) {
-				//假数据错误只提示
+				// 假数据错误只提示
 				resolve(data);
 				log.error(err.message);
 				err.message = "假数据解析出错：    " + err.message;
@@ -360,9 +360,9 @@ getOneModuleData = function(options) {
 			}
 		});
 	}
-	//如果是url过滤掉参数
+	// 如果是url过滤掉参数
 	ext = ext.split('?')[0];
-	//远程假数据
+	// 远程假数据
 	if (ext === 'html' || ext === 'do' || ext === 'htm' || ext === "action" || ext === "") {
 		return parseRemote
 		.getFtlData({
@@ -370,7 +370,7 @@ getOneModuleData = function(options) {
 			groupName: groupName,
 			branchName: branchName,
 		}).
-		//成功或者失败都返回数据
+		// 成功或者失败都返回数据
 		then(function(data) {
 			return data;
 		}, function() {
@@ -450,23 +450,23 @@ parseFtl = function(opt, isMockAjax) {
 	stdout = cmd.stdout;
 	stderr = cmd.stderr;
 	return Promise.props({
-	    rightData: new Promise(function(resolve) {
-				var rightData = "";
-				stdout.on('data', function(chunk) {
-					rightData += chunk.toString();
-				})
-				.on('end', function() {
-					resolve(rightData);
-				});
-			}),
-	    wrongData: new Promise(function(resolve) {
-				var wrongData = "";
-				stderr.on("data", function(chunk) {
-					wrongData += iconv.decode(chunk, 'GBK');
-				}).on('end', function() {
-					resolve(wrongData);
-				});
+		rightData: new Promise(function(resolve) {
+			var rightData = "";
+			stdout.on('data', function(chunk) {
+				rightData += chunk.toString();
 			})
+			.on('end', function() {
+				resolve(rightData);
+			});
+		}),
+		wrongData: new Promise(function(resolve) {
+			var wrongData = "";
+			stderr.on("data", function(chunk) {
+				wrongData += iconv.decode(chunk, 'GBK');
+			}).on('end', function() {
+				resolve(wrongData);
+			});
+		})
 	})
 	.then(function(data) {
 		if (data.rightData) {
@@ -482,7 +482,7 @@ parseFtl = function(opt, isMockAjax) {
 			var messages = message.split(/\\r\\n/);
 			var consoleError='<script> if (window.console && console.log && console.group) {'+ getFtlConsoleErrorString(messages) + getConsoleErrors() + '}  </script>';
 			reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData += consoleError);
-			//需要ajax mock假数据
+			// 需要ajax mock假数据
 			if (isMockAjax) {
 				finalData = insertajaxMock(finalData);
 			}
@@ -502,7 +502,7 @@ parseFtl = function(opt, isMockAjax) {
 		}
 	});
 };
-//插入ajax假数据
+// 插入ajax假数据
 insertajaxMock = function(fileContent) {
 	var head = "\<head\>";
 	var script = fs.readFileSync(path.join(__dirname, "./parseRemote/setXmlHttpReq.js"), {
@@ -510,7 +510,7 @@ insertajaxMock = function(fileContent) {
 	});
 	return fileContent.replace(head, head + "\r\n<script>" + script + "</script>");	
 };
-//将ftl错误解析后扔到console。log中去
+// 将ftl错误解析后扔到console。log中去
 getFtlConsoleErrorString = function(messages) {
 	var result;
 	result = messages.map(function(val, index) {
@@ -537,7 +537,7 @@ getFtlConsoleErrorString = function(messages) {
 	}
 	return result.join("");
 };
-//向控制台输出错误
+// 向控制台输出错误
 getConsoleErrors = function() {
 	if (consoleErrors && consoleErrors.length) {
 		return	consoleErrors.map(function(current) {
