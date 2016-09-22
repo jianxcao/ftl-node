@@ -88,13 +88,13 @@ var exit = function(fun) {
 		});
 	}
 };
-module = module.exports = MyCommand = function(command, commandOpt, groupName, branchName) {
-	this.groupName = groupName;
-	this.branchName = branchName;
-	this.command = command;
-	this.commandOpt = commandOpt || {};
-};
-
+function MyCommand(opt) {
+	this.groupName = opt.groupName;
+	this.branchName = opt.branchName;
+	this.command = opt.command;
+	this.commandOpt = opt.commandOpt || {};
+	this.notifiyServer = opt.notifiyServer;
+}
 MyCommand.prototype.exec = execOrder;
 MyCommand.prototype.exit = exit;
 MyCommand.prototype.notifiy = function(type, title, message) {
@@ -108,9 +108,10 @@ MyCommand.prototype.notifiy = function(type, title, message) {
 	messgeObj.type = type;
 	messgeObj.message = message;
 	messgeObj.title = title;
-	var notifiy = global.notifiy;
-	notifiy.send(JSON.stringify(messgeObj));
+	this.notifiyServer.send(JSON.stringify(messgeObj));
 };
+exports = module.exports = MyCommand;
+
 //myCommand = new MyCommand("npm run -s", {
 //	cwd: "D:\\gitLab\\fe"
 //});

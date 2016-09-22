@@ -1,14 +1,16 @@
 var express = require('express'),
 	app = express(),
-	log = require('../src/log'),
+	log = require('../log'),
 	path = require('path'),
 	bodyParser = require('body-parser'),
-	MyCommand = require('../src/execCommand'),
-	getProjectConfig = require('../src/getProjectConfig'),
+	MyCommand = require('../execCommand'),
+	getProjectConfig = require('../getProjectConfig'),
 	Promise = require('bluebird'),
 	commandObj = {},
-	config = require('../src/config'),
-	parseRemote = require('./parseRemote/parseRemoteMock');
+	config = require('../config'),
+	notifiy = require('./notifiy'),
+	parseRemote = require('../parseRemote/parseRemoteMock');
+
 var isEmptyObject = function(obj) {
 	for (var name in obj) {
 		return false;
@@ -16,23 +18,16 @@ var isEmptyObject = function(obj) {
 	return true;
 };
 
-app.engine('.ejs', require('ejs').__express);
-app.set('views', path.join( __dirname, '../views'));
-app.set('view engine', 'ejs');
-// 内部使用静态文件加载
-app.use("/static", express.static(path.join(__dirname, '../static')));
-app.use(bodyParser.json()); // for parsing application/json
-app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-app.all(["/sys/manager.html", "/sys/manager"], function(req, res, next) {
+var manager = function(req, res) {
 	res.render("manager", {});
-});
-app.all(["/sys/get_config_ajax.html", "/sys/get_config_ajax"], function(req, res, next) {
+};
+
+var getHost = function(req, res) {
 	// 从配置中获取配置
 	res.json(config.get() || {});
-});
+};
 
-
-app.post(['/sys/shell_control.html', '/sys/shell_control'], function(req, res, next) {
+var shellControl = function(req, res) {
 	/*stats解析 0表示系统错误
 	*1开头表示 启动命令的结果
 	* 1: 运行成功
@@ -76,9 +71,15 @@ app.post(['/sys/shell_control.html', '/sys/shell_control'], function(req, res, n
 									result.message = "请在run.config.js配置文件中输出start配置命令";
 								} else {
 									//"node app.js -p 8080"
-									currentCommandObj = new MyCommand(commandConfig.start, {
-										cwd: path.normalize(commandConfig.rootPath)
-									}, groupName, branchName);
+									currentCommandObj = new MyCommand({
+										command: commandConfig.start,
+										commandOpt: {
+											cwd: path.normalize(commandConfig.rootPath)
+										},
+										groupName: groupName,
+										branchName: branchName,
+										notifiyServer: app.get('notifiyServer')
+									});
 									commandObj[key] = currentCommandObj;
 								}
 							}
@@ -140,9 +141,12 @@ app.post(['/sys/shell_control.html', '/sys/shell_control'], function(req, res, n
 	}).then(function(result) {
 		res.json(result);
 	});
-});
-app.all(['/sys/is_have_shell_control.html', '/sys/is_have_shell_control'], function(req, res, next) {
+};
+
+var isHaveShellControl= function(req, res) {
 	var status = "0";
+	var data;
+	var commandConfig;
 	try{
 		if (req.body) {
 			data = req.body;
@@ -161,9 +165,9 @@ app.all(['/sys/is_have_shell_control.html', '/sys/is_have_shell_control'], funct
 		log.error(e);
 	}
 	res.send(status);
-});
+};
 
-app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], function(req, res) {
+var saveHost = function(req, res) {
 	var data, keys = ["port", "host", "autoResponder", "runCmd"], setData = {}, status = false;
 	try{
 		if (req.body && req.body.data) {
@@ -191,29 +195,59 @@ app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], function(req, re
 		log.error(e);
 	}
 	res.send("0");
-});
+};
 
-app.all(['/sys/proxyAjax.html'], function(req, res) {
+var proxyAjax = function(req, res) {
 	parseRemote.getAjaxData({
 		req: req,
 		res: res
 	});
-});
+};
 
 // 内部加载静态文件找不到错误
-app.use(function(req, res, next){
+var err404 = function(req, res){
 	res.status(404);
 	res.render("404", {
 		message: "内部没有找到路径, 文件路径" + req.originalUrl
 	});
-});
+};
+
 // 内部加载静态文件错误
-app.use(function(err, req, res, next) {
+var err500 = function(err, req, res) {
 	log.error('内部错误发生错误了  ', err.message);
 	res.status(500);
 	res.render("500", {
 		message: '内部错误发生错误了  ' + err.message
 	});
-});
+};
 
-module.exports = app;
+module.exports = function(server, autoProxyUrl) {
+	app.locals.baseUrl = "";
+	app.locals.cdnBaseUrl=  "/static";
+	app.locals.autoProxyUrl = autoProxyUrl;
+	app.engine('.ejs', require('ejs').__express);
+	app.set('views', path.join( __dirname, '../../views'));
+	app.set('view engine', 'ejs');
+	// 内部使用静态文件加载
+	app.use(app.locals.cdnBaseUrl, express.static(path.join(__dirname, '../../static')));
+	app.use(bodyParser.json()); // for parsing application/json
+	app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+	//主页面
+	app.all(["/sys/manager.html", "/sys/manager", "/manager", "/manager.html"], manager);
+	//获取配置文件
+	app.all(["/sys/get_config_ajax.html", "/sys/get_config_ajax"], getHost);
+	//命令控制
+	app.post(['/sys/shell_control.html', '/sys/shell_control'], shellControl);
+	//是否有用户命令
+	app.all(['/sys/is_have_shell_control.html', '/sys/is_have_shell_control'], isHaveShellControl);
+	//保存配置文件
+	app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], saveHost);
+	//代理ajax
+	app.all(['/sys/proxyAjax.html'], proxyAjax);
+
+	app.use(err404);
+	app.use(err500);
+	server.on('request', app);
+	var notifiyServer = notifiy(server);
+	app.set('notifiyServer', notifiyServer);
+};

@@ -22,12 +22,13 @@
     </tr>
   </thead>
   <tbody id = "headBody">
+  <% var pathname = /.*\/$/.test(locationUrl.pathname) ? locationUrl.pathname : locationUrl.pathname + "/"; %>
   <% if(data && data.length) {%>
     <% data.forEach(function(oneData) {%>
       <tr>
-        <td><a href="<%=locationUrl.pathname%><%=oneData.name%><%=locationUrl.search%><%=locationUrl.hash%>"><%if (oneData.isDirectory) {%><span class="glyphicon glyphicon-folder-close"></span>&nbsp;&nbsp;<%}%><strong><%=oneData.name%></strong></a></td>
-        <td><a href="<%=locationUrl.pathname%><%=oneData.name%><%=locationUrl.search%><%=locationUrl.hash%>"><%=oneData.size%></a></td>
-        <td><a href="<%=locationUrl.pathname%><%=oneData.name%><%=locationUrl.search%><%=locationUrl.hash%>"><%=oneData.mtime.getFullYear()%>年<%=oneData.mtime.getMonth() + 1%>月<%=oneData.mtime.getDate()%>日<%=oneData.mtime.getHours()%>时<%=oneData.mtime.getMinutes()%>分<%=oneData.mtime.getSeconds()%>秒</a></td>
+        <td><a href="<%=pathname%><%=oneData.name%><%=locationUrl.search%><%=locationUrl.hash%>"><%if (oneData.isDirectory) {%><span class="glyphicon glyphicon-folder-close"></span>&nbsp;&nbsp;<%}%><strong><%=oneData.name%></strong></a></td>
+        <td><a href="<%=pathname%><%=oneData.name%><%=locationUrl.search%><%=locationUrl.hash%>"><%=oneData.size%></a></td>
+        <td><a href="<%=pathname%><%=oneData.name%><%=locationUrl.search%><%=locationUrl.hash%>"><%=oneData.mtime.getFullYear()%>年<%=oneData.mtime.getMonth() + 1%>月<%=oneData.mtime.getDate()%>日<%=oneData.mtime.getHours()%>时<%=oneData.mtime.getMinutes()%>分<%=oneData.mtime.getSeconds()%>秒</a></td>
       </tr>
     <%});%>
   <%}%>

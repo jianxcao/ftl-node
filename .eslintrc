@@ -2,14 +2,15 @@
 	"env": {
 		"browser": true,
 		"amd": true,
-		"jquery": true
+		"jquery": true,
+        "node": true
 	},
 	"rules": {
 		// 允许出现alert, prompt 和 confirm
 		"no-alert": 0,
 
 		// 允许出现console
-		"no-console": 2,
+		// "no-console": 2,
 
 		// 允许出现debugger
 		"no-debugger": 2,
@@ -64,12 +65,12 @@
 
 		// 建议启用严格模式
 		"global-strict": 0,
-		"strict": 0,
+		"strict": 0
 
 		// 建议使用单引号
-		"quotes": [1, "single"],
+		// "quotes": [1, "single"],
 
 		// 建议注释符要有空白隔开
-		"spaced-comment": [1, "always"]
+		// "spaced-comment": [1, "always"]
 	}
 }

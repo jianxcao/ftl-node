@@ -19,11 +19,12 @@ var list = function(val){
 program
 	.version(pkg.version)
 	.option('-v, --version', '版本号码')
-	.option('-a --autoproxy [value]', "自动代理true|false", /^(true|false)$/i)
+	.option('-a --autoProxy [value]', "自动代理true|false", /^(true|false)$/i)
 	.option('-t, --type [value]', 'http或者https服务器类型, 同时开启2种服务器用all表示', /^(http|https|all)$/i)
 	.option('-p, --port [list]', '代理端口 默认  http: 80, https: 443, 多个端口用，分割第一个表示http，第二个表示https', list)
 	.option('-c, --cert', '生成根证书')
-	.option('-r --run-cmd <command>', "自动运行run.config.js中的start命令", /^(true|false)$/i)
+	.option('-u --uiPort [port]', "界面ui端口默认8001", parseInt)
+	.option('-r --runCmd <command>', "自动运行run.config.js中的start命令", /^(true|false)$/i)
 	.option('-l, --log [item]', 
 		'设置日志级别error, warn, info, verbose, debug, silly', 
 		/^(error|warn|info|verbose|debug|silly)$/i)
@@ -84,6 +85,13 @@ var getConfig = function() {
 	if (program.port && program.port.length) {
 		cfg.port = program.port;
 	}
+	if (program.autoProxy === "true" || program.autoProxy === true) {
+		cfg.autoProxy = true;
+	} else if (program.autoProxy === "false") {
+		cfg.autoProxy = false;
+	}
+	cfg.uiPort = program.uiPort;
+	
 	if (typeof program.log === 'string') {
 		cfg.logLevel = program.log;
 	}
@@ -124,6 +132,7 @@ if (program.cert) {
 	}
 } else {
 	var cfg = getConfig();
+	//初始化
 	config.init();
 	if (cfg.type) {
 		config.set('type', cfg.type);
@@ -134,13 +143,19 @@ if (program.cert) {
 			config.set('httpsPort', cfg.port[1]);
 		}
 	}
-
+	if (cfg.uiPort >= 0) {
+		config.set('uiPort', cfg.uiPort);
+	}
+	if (typeof cfg.autoProxy === 'boolean') {
+		config.set('autoProxy', cfg.autoProxy);
+	}
 	//保存到本地缓存
 	var runCmd = config.get('runCmd');
 	if (cfg.runCmd !== undefined && cfg.runCmd !== null) {
 		runCmd = cfg.runCmd;
 	}
 	config.set('runCmd', runCmd);
+
 	if (cfg.logLevel) {
 		config.set('logLevel', cfg.logLevel);
 	}
