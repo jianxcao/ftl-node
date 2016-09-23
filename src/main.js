@@ -50,11 +50,18 @@ var setErr = function() {
 		});
 	});
 
-	app.use(function(err, req, res) {
-		log.error('发生错误了,', err.message);
+	app.use(function(err, req, res, next) {
+		var message = "";
+		var t = typeof err;
+		if (t === 'string') {
+			message = err;
+		} else if(t === 'object') {
+			message = (err.message || "") + (err.msg || "") + (err.stack || ""); 
+		}
+		log.error('发生错误了,', message);
 		res.status(500);
 		res.render("500", {
-			message: "发生错误了," + err.message
+			message: "发生错误了," + message
 		});
 	});
 };
@@ -70,9 +77,6 @@ var comInit = function() {
 	app.set('views', path.join(__dirname , '../views'));
 	app.set('view engine', 'ejs');
 	app.use(app.locals.cdnBaseUrl, express.static(path.join(__dirname, '../static')));
-	if (!cfg.autoproxy) {
-		app.use(parsePageUrl());
-	}
 	app.use(parseSet());
 	app.use(cookieParser());
 	app.use(session({
