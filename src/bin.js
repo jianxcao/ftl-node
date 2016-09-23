@@ -132,40 +132,11 @@ if (program.cert) {
 	}
 } else {
 	var cfg = getConfig();
-	// 初始化
-	config.init();
-	if (cfg.type) {
-		config.set('type', cfg.type);
-	}
 	if (cfg.port && cfg.port.length) {
-		config.set('port', cfg.port[0]);
 		if (cfg.port[1]) {
-			config.set('httpsPort', cfg.port[1]);
+			cfg.httpsPort =  cfg.port[1];
 		}
+		cfg.port = cfg.port[0];
 	}
-	if (cfg.uiPort >= 0) {
-		config.set('uiPort', cfg.uiPort);
-	}
-	if (typeof cfg.autoProxy === 'boolean') {
-		config.set('autoProxy', cfg.autoProxy);
-	}
-	// 保存到本地缓存
-	var runCmd = config.get('runCmd');
-	if (cfg.runCmd !== undefined && cfg.runCmd !== null) {
-		runCmd = cfg.runCmd;
-	}
-	config.set('runCmd', runCmd);
-
-	if (cfg.logLevel) {
-		config.set('logLevel', cfg.logLevel);
-	}
-	var logLevel = config.get('logLevel');
-	
-	// 设置当前的log级别
-	if (logLevel) {
-		log.transports.console.level = logLevel;
-	}
-	// 保存配置
-	config.save();
-	main();
+	main(cfg);
 }

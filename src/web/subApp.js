@@ -28,17 +28,17 @@ var getHost = function(req, res) {
 };
 
 var shellControl = function(req, res) {
-	/*stats解析 0表示系统错误
-	*1开头表示 启动命令的结果
-	* 1: 运行成功
-	* 11: 运行命令出错
-	* 12: 命令已经在运行中
-	* 13: 没有配置文件
-	* 14: 配置文件解析出错
-	*2开头表示 结束命令的结果
-	* 2停止命令运行成功
-	* 21 停止命令出错
-	* 22 表示当前么有这个命令
+	/* stats解析 0表示系统错误
+		*1开头表示 启动命令的结果
+		* 1: 运行成功
+		* 11: 运行命令出错
+		* 12: 命令已经在运行中
+		* 13: 没有配置文件
+		* 14: 配置文件解析出错
+		*2开头表示 结束命令的结果
+		* 2停止命令运行成功
+		* 21 停止命令出错
+		* 22 表示当前么有这个命令
 	**/
 	var result = {status: 0, message: "系统忙请,稍后再试"};
 	var data;
@@ -56,7 +56,7 @@ var shellControl = function(req, res) {
 					branchName = branchName.trim();
 					groupName = groupName.trim();
 					key = groupName + "_" + branchName;
-					//发送命令
+					// 发送命令
 					currentCommandObj = commandObj[key];
 					if (data.type === 1) {
 						// 没有命令就创建命令
@@ -70,7 +70,7 @@ var shellControl = function(req, res) {
 									result.status = 14;
 									result.message = "请在run.config.js配置文件中输出start配置命令";
 								} else {
-									//"node app.js -p 8080"
+									// "node app.js -p 8080"
 									currentCommandObj = new MyCommand({
 										command: commandConfig.start,
 										commandOpt: {
@@ -103,7 +103,7 @@ var shellControl = function(req, res) {
 								}));
 							}
 						}
-					//结束正在运行的命令
+					// 结束正在运行的命令
 					} else {
 						currentCommandObj = commandObj[key];
 						if (currentCommandObj) {
@@ -168,7 +168,7 @@ var isHaveShellControl= function(req, res) {
 };
 
 var saveHost = function(req, res) {
-	var data, keys = ["port", "host", "autoResponder", "runCmd"], setData = {}, status = false;
+	var data, keys = ["port", "host", "autoResponder", "runCmd", "httpsPort", "logLevel", "type", "uiPort", "autoProxy", "isVisitDir"], setData = {}, status = false;
 	try{
 		if (req.body && req.body.data) {
 			data = req.body.data;
@@ -179,7 +179,7 @@ var saveHost = function(req, res) {
 				return;
 			}
 			for (var i = 0; i < keys.length; i++) {
-				if (data[keys[i]]) {
+				if (data[keys[i]] !== null && data[keys[i]] !== undefined) {
 					status = true;
 					setData[keys[i]] = data[keys[i]];
 				}
@@ -232,17 +232,17 @@ module.exports = function(server, autoProxyUrl) {
 	app.use(app.locals.cdnBaseUrl, express.static(path.join(__dirname, '../../static')));
 	app.use(bodyParser.json()); // for parsing application/json
 	app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-	//主页面
+	// 主页面
 	app.all(["/sys/manager.html", "/sys/manager", "/manager", "/manager.html"], manager);
-	//获取配置文件
+	// 获取配置文件
 	app.all(["/sys/get_config_ajax.html", "/sys/get_config_ajax"], getHost);
-	//命令控制
+	// 命令控制
 	app.post(['/sys/shell_control.html', '/sys/shell_control'], shellControl);
-	//是否有用户命令
+	// 是否有用户命令
 	app.all(['/sys/is_have_shell_control.html', '/sys/is_have_shell_control'], isHaveShellControl);
-	//保存配置文件
+	// 保存配置文件
 	app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], saveHost);
-	//代理ajax
+	// 代理ajax
 	app.all(['/sys/proxyAjax.html'], proxyAjax);
 
 	app.use(err404);

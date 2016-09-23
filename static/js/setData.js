@@ -1,6 +1,7 @@
 define(["jquery", "config", "js/infoTip", "js/command"], function($, config, infoTip, command) {
 	// 用来记录上次的分组信息--内部使用
 	var oldData =  "";
+	var logLevels = ['error', 'warn', 'info', 'verbose', 'debug', 'silly'];
 	var result = {
 		// 表示与后端同步的分组信息
 		data: {
@@ -50,6 +51,22 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 			}
 			return retVal;
 		},
+		//	设置日志级别
+		setLogLevel: function(level) {
+			if (logLevels.some(function(cur) {return level === cur;})) {
+				this.data.logLevel = level;
+				this.save();
+			}
+		},
+		// 设置目录访问
+		setVisitDir: function(status) {
+			this.data.isVisitDir = !!status; 
+		},
+		// 设置是否自动代理
+		setAutoProxy: function(status) {
+			this.data.autoProxy = !!status; 
+		},
+		// 保存数据
 		save: function() {
 			var data = this.data;
 			var strData = JSON.stringify(data);
@@ -58,7 +75,7 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 			// 如果数据完全一样，就证明根本没有改配置
 			if (strData === oldstrData) {
 				return;
-			}
+			};
 			$.post(config.baseUrl + '/sys/set_config_ajax.html', {
 				data: strData
 			})
@@ -160,6 +177,7 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 				} else {
 					try {
 						if (data.responseJSON) {
+							console.log(data.responseJSON);
 							result.data = data.responseJSON;
 							result.data.host = result.data.host || [];
 						}

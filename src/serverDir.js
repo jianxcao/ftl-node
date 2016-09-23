@@ -8,15 +8,9 @@ var url = require('url');
 var getFileInfo, parseDir;
 exports = module.exports = function serveStatic() {
 	return function serveStatic(req, res, next) {
-		// 如果不是get请求或者 是head， 就直接到下一个请求
-		if (req.method !== 'GET' && req.method !== 'HEAD') {
-			return next();
-		}
 		var pathObject = req.pathObject;
 		var absPath = pathObject.fullPath;
-		var status = fs.lstatSync(absPath);
-		// 不是个文件夹
-		if (!status.isDirectory()) {
+		if (!pathObject.isDirectory) {
 			next();
 			return;
 		} else {

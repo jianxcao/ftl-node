@@ -17,6 +17,13 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 				manager.initMenu();
 				manager.initProjectPanelEvt();
 				manager.initSave();
+				$('#listDir')
+				.attr('checked', data.autoProxy)
+				.click(function() {
+					manager.configModel.setVisitDir(this.checked);
+					manager.configModel.setAutoProxy(this.checked);
+					manager.configModel.save();
+				});
 			});
 		},
 		// 右侧列表默认初始化
@@ -26,6 +33,7 @@ define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "j
 			if (data.host && data.host.length) {
 				host = data.host.slice(0);
 			}
+			
 			// 将折叠信息注入数组，当成一个属性
 			host.foldInfo = this.configModel.foldInfo;
 			// 初始化左侧菜单

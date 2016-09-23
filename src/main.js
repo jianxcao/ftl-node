@@ -60,7 +60,8 @@ var setErr = function() {
 };
 
 // 通用流程
-var comInit = function(cfg) {
+var comInit = function() {
+	var cfg = config.get();
 	app.disable('x-powered-by');
 	app.locals.baseUrl = "";
 	app.locals.cdnBaseUrl =  "/__serverdir";
@@ -108,7 +109,8 @@ var openUi = function(port) {
 };
 
 // 创建ui界面
-var createUi = function(cfg, autoProxyUrl) {
+var createUi = function(autoProxyUrl) {
+	var cfg = config.get();
 	var server = http.createServer();
 	var my = subApp(server, autoProxyUrl);
 	var port = +cfg.uiPort;
@@ -126,7 +128,8 @@ var createUi = function(cfg, autoProxyUrl) {
 };
 
 // 创建服务器
-var createServer = function(cfg) {
+var createServer = function() {
+	var cfg = config.get();
 	var servers = [];
 	var type = cfg.type;
 	var port = cfg.port, httpsPort = cfg.httpsPort;
@@ -159,7 +162,9 @@ var createServer = function(cfg) {
 	return servers;
 };
 
-var createAutoProxy = function(cfg) {
+// 创建代理服务器
+var createAutoProxy = function() {
+	var cfg = config.get();
 	var ProxyServer = catProxy.Server;
 	var isServerStatic = new RegExp("^" + app.locals.cdnBaseUrl);
 	return new Promise(function(resolve, reject) {
@@ -187,8 +192,17 @@ var createAutoProxy = function(cfg) {
 		}, null, false);
 		proxy.use(parsePageUrl());
 		// 没有出错的情况下
-		proxy.use(function(req, res) {
-			app(req, res);	
+		proxy.use(function(req, res, next) {
+			// 这里的err指得时parsePath失败
+			var	headers = req.headers,
+				host = req.headers.host,
+				hostname = host.split(':')[0];
+			// 不可以访问目录
+			if (config.get('autoProxy') && req.pathObject.isDirectory && !net.isIP(hostname) && hostname !== 'localhost') {
+				next();
+			} else {
+				app(req, res);
+			}
 		});
 		proxy.use(function(err, req, res, next) {
 			// 这里的err指得时parsePath失败
@@ -199,11 +213,11 @@ var createAutoProxy = function(cfg) {
 				pathname = urlObject.pathname,	
 				extname = path.extname(pathname);
 			// 本机静态资源
-			if (isServerStatic.test(pathname)) {
-				app(req, res);
+			if (isServerStatic.test(pathname) || !config.get('autoProxy')) {
+				return app(req, res);
 			}
 			// 找不到文件
-			if (err && extname !== 'ftl' && !net.isIP(hostname) && hostname !== 'localhost') {
+			if (err && extname !== '.ftl' && !net.isIP(hostname) && hostname !== 'localhost') {
 				next();
 			} else {
 				if (err) {
@@ -226,29 +240,44 @@ var createAutoProxy = function(cfg) {
 	});
 };
 
-module.exports = exports = function() {
-	// 读取缓存配置文件
-	var fileCfg = {};
-	['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel']
-	.forEach(function(current) {
-		var val = config.get(current);
-		if ( val !== undefined && val !== null) {
-			fileCfg[current] = val;
+// 初始化配置
+var initConfig = function(cfg) {
+	// 初始化
+	config.init();
+	var fileCfg = config.get();
+	['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel', "runCmd"]
+	.forEach(function(key) {
+		if (cfg[key] ===  undefined || cfg[key] === null) {
+			if (fileCfg[key] !== undefined && fileCfg[key] !== null) {
+				cfg[key] = fileCfg[key];
+			} else {
+				cfg[key] = defCfg[key];
+			}
 		}
 	});
-	var cfg = merge({}, defCfg, fileCfg);
-	comInit(cfg);
-	setErr();
-	if (!cfg.autoProxy) {
-		createServer(cfg);
-		createUi(cfg);
-	} else {
-		createAutoProxy(cfg)
-		.then(function(proxyObj) {
-			var port = +proxyObj.uiPort !== 80  ? (":" + proxyObj.uiPort) : "";
-			var myUrl = "http://" + tools.localIps[0] + port;
-			createUi(cfg, myUrl);
-		});
+	for(var key in cfg) {
+		if (cfg[key] !== undefined && cfg[key]!== null) {
+			config.set(key, cfg[key]);
+		}
 	}
+	var logLevel = config.get('logLevel');
+	// 设置当前的log级别
+	if (logLevel) {
+		log.transports.console.level = logLevel;
+	}
+	// 保存配置
+	config.save();
+};
+
+module.exports = exports = function(cfg) {
+	initConfig(cfg);
+	comInit();
+	setErr();
+	createAutoProxy()
+	.then(function(proxyObj) {
+		var port = +proxyObj.uiPort !== 80  ? (":" + proxyObj.uiPort) : "";
+		var myUrl = "http://" + tools.localIps[0] + port;
+		createUi(myUrl);
+	});
 	process.on('uncaughtException', tools.error);
 };
