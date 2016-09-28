@@ -47,11 +47,13 @@ ${request.getScheme()}
 
 ## 其他
 
-1. [帮助页面](static/help.md)
+1. [ui界面配置说明](static/help.md)
 
 2. [假数据配置说明](static/mock.md)
 
-3. [更新日志](./updateInfo.md)
+3. [代理服务器说明](static/proxy.md)
+
+4. [更新日志](./updateInfo.md)
 
 ## License
 
