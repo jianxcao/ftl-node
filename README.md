@@ -46,10 +46,12 @@ ${request.getScheme()}
 2. 配置将记录于系统缓存文件中，请确保运行时有对系统缓存目录修改的权限,并注意如果缓存目录清除，将会删除配置文件
 
 ## 其他
-[帮助页面](https://github.com/jianxcao/ftl-node/blob/master/static/help.md)
-## [假数据说明](./ftl-node远程假数据调用.md)
 
-## [更新日志](./updateInfo.md)
+1. [帮助页面](static/help.md)
+
+2. [假数据配置说明](static/mock.md)
+
+3. [更新日志](./updateInfo.md)
 
 ## License
 
