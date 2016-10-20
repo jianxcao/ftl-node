@@ -16,6 +16,8 @@ var config = {
 		redirect: '$1.$2'
 	}],
 	isMockFtl: true,
+	//是否在ftl文件中转义输出变量，true转义，这个选项只有在freemarker版本大于等于 2.3.24时才生效
+	ftlFormat: false,
 	mockFtl: [{
 		test: /.*/,
 		redirect:function(url, queryString) {

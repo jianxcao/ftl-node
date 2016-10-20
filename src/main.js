@@ -21,7 +21,8 @@ var tools = require('./tools'),
 	getPort = require('empty-port'),
 	Promise = require('bluebird'),
 	url = require('url'),
-	catProxy = require('catproxy');
+	catProxy = require('catproxy'),
+	parseRemote = require('./parseRemote/parseRemoteMock');
 var app = express();
 var defCfg = {
 	port: 80,
@@ -77,6 +78,12 @@ var comInit = function() {
 	app.set('views', path.join(__dirname , '../views'));
 	app.set('view engine', 'ejs');
 	app.use(app.locals.cdnBaseUrl, express.static(path.join(__dirname, '../static')));
+	app.use(['/__serverdir/sys/proxyAjax.html'], function(req, res) {
+		parseRemote.getAjaxData({
+			req: req,
+			res: res
+		});
+	});
 	app.use(parseSet());
 	app.use(cookieParser());
 	app.use(session({
@@ -86,6 +93,7 @@ var comInit = function() {
 	}));
 	// 解析参数
 	app.use(bodyParser.urlencoded({ extended: false }));
+
 	// 运用静态文件路径---即生成一个路径表明当前文件路径
 	app.use(serverDir());
 	// 运用静态文件模块
@@ -122,7 +130,9 @@ var createUi = function(autoProxyUrl) {
 		return;
 	}
 	server.listen(port, function() {
-		openUi(port);
+		if (cfg.autoOpen) {
+			openUi(port);
+		}
 	});
 	server.on('error', function(err) {
 		tools.error(err);
@@ -249,7 +259,7 @@ var initConfig = function(cfg) {
 	// 初始化
 	config.init();
 	var fileCfg = config.get();
-	['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel', "runCmd"]
+	['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel', "runCmd", "autoOpen"]
 	.forEach(function(key) {
 		if (cfg[key] ===  undefined || cfg[key] === null) {
 			if (fileCfg[key] !== undefined && fileCfg[key] !== null) {

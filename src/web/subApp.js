@@ -8,8 +8,7 @@ var express = require('express'),
 	Promise = require('bluebird'),
 	commandObj = {},
 	config = require('../config'),
-	notifiy = require('./notifiy'),
-	parseRemote = require('../parseRemote/parseRemoteMock');
+	notifiy = require('./notifiy');
 
 var isEmptyObject = function(obj) {
 	for (var name in obj) {
@@ -197,13 +196,6 @@ var saveHost = function(req, res) {
 	res.send("0");
 };
 
-var proxyAjax = function(req, res) {
-	parseRemote.getAjaxData({
-		req: req,
-		res: res
-	});
-};
-
 // 内部加载静态文件找不到错误
 var err404 = function(req, res){
 	res.status(404);
@@ -242,9 +234,6 @@ module.exports = function(server, autoProxyUrl) {
 	app.all(['/sys/is_have_shell_control.html', '/sys/is_have_shell_control'], isHaveShellControl);
 	// 保存配置文件
 	app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], saveHost);
-	// 代理ajax
-	app.all(['/sys/proxyAjax.html'], proxyAjax);
-
 	app.use(err404);
 	app.use(err500);
 	server.on('request', app);

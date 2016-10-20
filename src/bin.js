@@ -23,7 +23,8 @@ program
 	.option('-t, --type [value]', 'http或者https服务器类型, 同时开启2种服务器用all表示', /^(http|https|all)$/i)
 	.option('-p, --port [list]', '代理端口 默认  http: 80, https: 443, 多个端口用，分割第一个表示http，第二个表示https', list)
 	.option('-c, --cert', '生成根证书')
-	.option('-u --uiPort [port]', "界面ui端口默认8001", parseInt)
+	.option('-u --uiPort [port]', "界面ui端口默认8001, 0表示没有图形界面", parseInt)
+	.option('--autoOpen [ui]', "自动打开图形界面", /^(true|false)$/)
 	.option('-r --runCmd <command>', "自动运行run.config.js中的start命令", /^(true|false)$/i)
 	.option('-l, --log [item]', 
 		'设置日志级别error, warn, info, verbose, debug, silly', 
@@ -91,7 +92,11 @@ var getConfig = function() {
 		cfg.autoProxy = false;
 	}
 	cfg.uiPort = program.uiPort;
-	
+	if (program.autoOpen === "true" || program.autoOpen === true) {
+		cfg.autoOpen = true;
+	} else if (program.autoOpen === "false") {
+		cfg.autoOpen = false;
+	}	
 	if (typeof program.log === 'string') {
 		cfg.logLevel = program.log;
 	}

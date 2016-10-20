@@ -1,6 +1,6 @@
 /**
  * 设置 页面中的xmlHttpRequest对象
- * 将请求拦截到指定的/___mySystemInner/sys/get.html上
+ * 将请求拦截到指定的/__serverdir/sys/proxyAjax.html上
  * 系统通过这个url代理所有的ajax请求代理到指定的站点
  */
 (function(win){
@@ -19,7 +19,7 @@
 		// 修改url发送到指定位置
 		url = win.location.protocol + "\/\/" + 
 		win.location.host + 
-		'/___mySystemInner/sys/proxyAjax.html?url=' + 
+		'/__serverdir/sys/proxyAjax.html?url=' + 
 		encodeURIComponent(url) +
 		"&mainPage=" + window.location.href;
 		// 继续发送

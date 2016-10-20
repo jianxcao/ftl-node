@@ -105,7 +105,9 @@ exports = module.exports = function serveFtl(port) {
 					ftlPath: pathObject.newPath,
 					req: req,
 					res: res,
-					data: data
+					data: data,
+					// freemarker 版本大于等于2.3.24新增可以自动转码输出内容，该功能与 <#escape>标签相互冲突,使用后不能使用<#escape></#noescape>
+					ftlFormat: !!commandConfig.ftlFormat
 				}, !!commandConfig.isMockAjax);
 			})
 			.catch(function(err) {
@@ -443,7 +445,8 @@ parseFtl = function(opt, isMockAjax) {
 	ftlPath = ftlPath.replace(/^\\/, "");
 	option = {
 		dir: rootPath,
-		path: ftlPath
+		path: ftlPath,
+		ftlFormat: opt.ftlFormat
 	};
 	option = JSON.stringify(option);
 	cmd = spawn('java', ["-jar", jarFilePath, option, data]);
