@@ -72,3 +72,6 @@
 1. 修复ajax假数据代理url地址错误问题
 2. 增加新命令 ftl-node --autoOpen false 表示 不自动打开管理界面
 3. 增加freemarker自动转义功能，在 **run.config.js** 中配置 `ftlFormat=true`生效, 注意： **只有在freemarker jar包版本高于2.3.24该参数生效，否则无效**
+
+## V2.1.1 2016年10月20日)
+1. `run.config.js`中jarVersion支持配置相对路径

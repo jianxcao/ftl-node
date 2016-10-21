@@ -49,7 +49,7 @@ exports = module.exports = function serveFtl(port) {
 				if (commandConfig && commandConfig.jarVersion) {
 					jarVersion = commandConfig.jarVersion;
 				}
-				setJarFile(jarVersion);
+				setJarFile(jarVersion, commandConfig.rootPath);
 				//	回收生成的临时文件
 				req.on('close', function () {
 					deleteFiles(tmpFilePaths);

@@ -39,7 +39,7 @@ var parseJarPath = function() {
  * 真正调用的是freemarker.jar这个文件，所以无论是用户配置的路径还是默认的jar文件，都是走这个路径的
  * 路径，用户设置的路径
  */
-var setJarFile = function(version) {
+var setJarFile = function(version, rootPath) {
 	var result = parseJarPath();
 	if (!result || !result.versions) {
 		throw new Error(" 读取jar默认路径出错");
@@ -57,8 +57,9 @@ var setJarFile = function(version) {
 	// 上面的规则没有找到jar，尝试version用作路径，看是否存在jar包路径
 	if (!currentVersion && version) {
 		// 加入直接是一个文件路径
-		if (fs.existsSync(path.resolve(version))) {
-			jarPath = version;
+		var tmpPath = path.resolve(rootPath, version);
+		if (fs.existsSync(tmpPath)) {
+			jarPath = tmpPath;
 			currentVersion = true;
 		}
 	}
