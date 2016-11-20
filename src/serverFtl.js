@@ -451,8 +451,8 @@ parseFtl = function(opt, isMockAjax) {
 	cmd = spawn('java', ["-jar", jarFilePath, option, data]);
 	stdout = cmd.stdout;
 	stderr = cmd.stderr;
-	return Promise.props({
-		rightData: new Promise(function(resolve) {
+	return Promise.all([
+		new Promise(function(resolve) {
 			var rightData = "";
 			stdout.on('data', function(chunk) {
 				rightData += chunk.toString();
@@ -461,7 +461,7 @@ parseFtl = function(opt, isMockAjax) {
 				resolve(rightData);
 			});
 		}),
-		wrongData: new Promise(function(resolve) {
+		new Promise(function(resolve) {
 			var wrongData = "";
 			stderr.on("data", function(chunk) {
 				wrongData += iconv.decode(chunk, 'GBK');
@@ -469,8 +469,12 @@ parseFtl = function(opt, isMockAjax) {
 				resolve(wrongData);
 			});
 		})
-	})
-	.then(function(data) {
+	])
+	.then(function(result) {
+		var data = {
+			rightData: result[0],
+			wrongData: result[1]
+		};
 		if (data.rightData) {
 			var finalData = data.rightData;
 			var reg = /<\/body>/;
