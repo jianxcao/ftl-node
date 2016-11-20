@@ -2,16 +2,15 @@
 // 转义html
 // var escapeHtml = require('escape-html');
 // object对象合并模块
-var merge = require('utils-merge');
+var merge = require('merge');
 var path = require('path');
 var log = require('../src/log');
 var fs = require('fs');
 var parseRemote = require('./parseRemote/parseRemoteMock');
 var jarFilePath = path.join(__dirname, "../lib/jar/ftl.jar");
 var spawn = require('child_process').spawn;
-var Promise = require('bluebird');
+var Promise = require('promise');
 var iconv = require('iconv-lite');
-var merge = require('utils-merge');
 var fse = require('fs-extra');
 var getProjectConfig = require('../src/getProjectConfig');
 var setJarFile = require('../src/setJarFile');

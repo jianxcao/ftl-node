@@ -1,15 +1,13 @@
 
 // 转义html
 // var escapeHtml = require('escape-html');
-// object对象合并模块
-// var merge = require('utils-merge');
 // 解析url模块
 var path = require('path');
 var fs = require('fs');
 var log = require('../src/log');
 var config = require('../src/config');
 var querystring = require('querystring');
-var Promise = require('bluebird');
+var Promise = require('promise');
 var getProjectConfig = require('../src/getProjectConfig');
 var URL = require('url');
 var parsePath, parseOneGroup, parseBranch, parseOneBranch, redirectUrl, execParse, redirectOneUrl;

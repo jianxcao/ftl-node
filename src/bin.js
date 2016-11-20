@@ -3,7 +3,6 @@ var path  = require('path');
 var	fs = require('fs');
 var pkg = require('../package');
 var log = require('./log');
-var config = require('./config');
 var catProxy = require('catproxy');
 var prompt = require('prompt');
 var colors = require('colors');
@@ -20,13 +19,16 @@ program
 	.version(pkg.version)
 	.option('-v, --version', '版本号码')
 	.option('-a --autoProxy [value]', "自动代理true|false", /^(true|false)$/i)
-	.option('-t, --type [value]', 'http或者https服务器类型, 同时开启2种服务器用all表示', /^(http|https|all)$/i)
-	.option('-p, --port [list]', '代理端口 默认  http: 80, https: 443, 多个端口用，分割第一个表示http，第二个表示https', list)
-	.option('-c, --cert', '生成根证书')
+	.option('-t --type [value]', 'http或者https服务器类型, 同时开启2种服务器用all表示', /^(http|https|all)$/i)
+	.option('-p --port [list]', '代理端口 默认  http: 80, https: 443, 多个端口用，分割第一个表示http，第二个表示https', list)
+	.option('-c --cert', '生成根证书')
 	.option('-u --uiPort [port]', "界面ui端口默认8001, 0表示没有图形界面", parseInt)
 	.option('--autoOpen [ui]', "自动打开图形界面", /^(true|false)$/)
-	.option('-r --runCmd <command>', "自动运行run.config.js中的start命令", /^(true|false)$/i)
-	.option('-l, --log [item]', 
+	.option('-r --runCmd [value]', "自动运行run.config.js中的start命令", /^(true|false)$/i)
+	.option('-b --breakHttps [value]', "是否破解https,破解https前请先安装证书， 可以是host，多个host以 , 分割, 关闭自动代理，该参数无效")
+	.option('-e --excludeHttps [value]', "在设置拦截https的情况下，是否需要排除某些host，多个host请以，分割, 可以使用正则, '' 重置所有列表为默认， -e优先级高于 -b, 关闭自动代理，该参数无效")
+	.option('-s --sni [value]', "sni 设置，该参数在将服务器当做代理使用时有效，  1表示采用nodejs的 snicallback方式（某些浏览器不支持，比如ie6，低版本androi, 默认）2 表示采用多台服务器去代理（全支持，但是性能低）, 关闭自动代理，该参数无效", /^(1|2)$/i)
+	.option('-l --log [item]', 
 		'设置日志级别error, warn, info, verbose, debug, silly', 
 		/^(error|warn|info|verbose|debug|silly)$/i)
 	.on('--help', function() {
@@ -71,35 +73,46 @@ program
 		console.log('      但是可以自己增加新的jar包');
 	})
 	.parse(process.argv);
-
 var getConfig = function() {
 	// 处理成cfg的config
 	var cfg = {};
-	if (program.runCmd === "true" || program.runCmd === true) {
-		cfg.runCmd = true;
-	} else if (program.runCmd === "false") {
-		cfg.runCmd = false;
-	}
-	if (typeof program.type === 'string') {
-		cfg.type = program.type;
-	}
-	if (program.port && program.port.length) {
-		cfg.port = program.port;
-	}
-	if (program.autoProxy === "true" || program.autoProxy === true) {
-		cfg.autoProxy = true;
-	} else if (program.autoProxy === "false") {
-		cfg.autoProxy = false;
-	}
-	cfg.uiPort = program.uiPort;
-	if (program.autoOpen === "true" || program.autoOpen === true) {
-		cfg.autoOpen = true;
-	} else if (program.autoOpen === "false") {
-		cfg.autoOpen = false;
-	}	
-	if (typeof program.log === 'string') {
-		cfg.logLevel = program.log;
-	}
+	var booleanKeys = ['runCmd', 'autoOpen', 'autoProxy', 'breakHttps']; 
+	['type', 'port', 'uiPort', 'log', 'breakHttps', 'excludeHttps', 'autoOpen', 'sni', 'runCmd', 'autoProxy']
+	.forEach(function(current) {
+		if (program[current] === 'true') {
+			program[current] = true;
+		}
+		if (program[current] === 'false') {
+			program[current] = false;
+		}
+		var type = typeof program[current];
+		if (type === 'boolean') {
+			if (~booleanKeys.indexOf(current)) {
+				cfg[current] = program[current];
+			}
+		} else if (type === 'string') {
+			program[current] = program[current].toLowerCase();
+			if (cfg[current] === '') {
+				if (current === 'excludeHttps') {
+					cfg[current] = '';
+				}
+			} else {
+				if (current == 'breakHttps' || current === 'excludeHttps') {
+					cfg[current] = program[current].split(',');
+				} else {
+					cfg[current] = program[current];
+				}
+			}
+		} else if (type === 'number') {
+			if (program[current] >= -1) {
+				cfg[current] = program[current];
+			}
+		} else if (type === 'object') {
+			if (current === 'port' &&  program.port.length) {
+				cfg.port = program.port;
+			}
+		}
+	});
 	return cfg;
 };
 

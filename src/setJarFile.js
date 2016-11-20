@@ -73,7 +73,7 @@ var setJarFile = function(version, rootPath) {
 		// 没有缓存，则拷贝覆盖 freemarker.jar 文件
 		if (cachePath !== jarPath) {
 			fsExtra.copySync(jarPath, path.join(basePath, "freemarker.jar"));
-			log.info('成功设置jar包，jar包原始路径:' + jarPath);
+			// log.info('成功设置jar包，jar包原始路径:' + jarPath);
 		}
 		cachePath =  jarPath;
 		log.info(jarPath);

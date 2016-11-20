@@ -2,7 +2,7 @@
 var log = require('../log');
 var getProjectConfig = require('../getProjectConfig');
 var request = require("request");
-var Promise = require('bluebird');
+var Promise = require('promise');
 var parsePath = require('../parsePath');
 var getCmdUrl, parseRule, getAjaxData, getFtlData;
 var URL = require('url');

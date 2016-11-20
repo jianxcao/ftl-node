@@ -2,7 +2,7 @@
 // 解析url模块
 var path = require('path');
 var fs = require('fs');
-var Promise = require('bluebird');
+var Promise = require('promise');
 var log = require('../src/log');
 var url = require('url');
 var getFileInfo, parseDir;

@@ -2,7 +2,6 @@
 // 转义html
 // var escapeHtml = require('escape-html');
 // object对象合并模块
-// var merge = require('utils-merge');
 var path = require('path');
 var parsePath = require('../src/parsePath');
 var url = require('url');

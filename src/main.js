@@ -19,17 +19,20 @@ var tools = require('./tools'),
 	tls = require('tls'),
 	net = require('net'),
 	getPort = require('empty-port'),
-	Promise = require('bluebird'),
+	Promise = require('promise'),
 	url = require('url'),
 	catProxy = require('catproxy'),
 	parseRemote = require('./parseRemote/parseRemoteMock');
 var app = express();
+var configKey = ['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel', "runCmd", "autoOpen", "log", 'breakHttps', 'excludeHttps', 'sni'];
 var defCfg = {
 	port: 80,
 	httpsPort: 443,
 	type: 'http',
 	uiPort: 8001,
-	autoproxy: false
+	autoproxy: false,
+	sni: 1,
+	log: 'error'
 };
 var SNICallback = function(servername, callback) {
 	try {
@@ -108,7 +111,6 @@ var openUi = function(port) {
 	// 启动一个默认浏览器打开后台管理页面
 	port  = port === 80 ? '' : (":" + port);
 	var cmd, uri = "http://" + tools.localIps[0] + port + "/manager.html";
-	log.info('ui界面地址: ' + uri);
 	if (process.platform === 'win32') {
 		cmd = 'start';
 	} else if (process.platform === 'linux') {
@@ -116,7 +118,6 @@ var openUi = function(port) {
 	} else if (process.platform === 'darwin') {
 		cmd = 'open';
 	}
-	log.info('后台管理页面打开中');
 	childProcess.exec([cmd, uri].join(' '));
 };
 
@@ -130,6 +131,7 @@ var createUi = function(autoProxyUrl) {
 		return;
 	}
 	server.listen(port, function() {
+		log.info('ftl-node, ui界面地址: ' + "http://" + tools.localIps[0] + ":" + port + "/manager.html");
 		if (cfg.autoOpen) {
 			openUi(port);
 		}
@@ -139,41 +141,6 @@ var createUi = function(autoProxyUrl) {
 		process.exit(1);
 	});
 	return server;
-};
-
-// 创建服务器
-var createServer = function() {
-	var cfg = config.get();
-	var servers = [];
-	var type = cfg.type;
-	var port = cfg.port, httpsPort = cfg.httpsPort;
-	var certObj;
-	if (type === 'all') {
-		servers[0] = http.createServer();
-		certObj = catProxy.cert.getCert('localhost');
-		servers[1] = https.createServer({
-			key: certObj.privateKey, cert: certObj.cert, rejectUnauthorized: false, SNICallback: SNICallback});
-	} else if (type === 'https') {
-		certObj = catProxy.cert.getCert('localhost');
-		servers[0] = https.createServer({
-			key: certObj.privateKey, cert: certObj.cert, rejectUnauthorized: false, SNICallback: SNICallback});
-	} else if (type === 'http') {
-		servers[0] = http.createServer();
-	}
-	servers.forEach(function(server, index) {
-		var serverType = server instanceof  http.Server ? 'http' : 'https';
-		var p = serverType === 'http' ? port : httpsPort;
-		// 启动出错，直接退出
-		server.on('error', function(err) {
-			tools.error(err);
-			process.exit(1);
-		});
-		server.on('request', app);
-		server.listen(p, function() {
-			log.info('服务器成功启动', '端口号码', p);
-		});
-	});
-	return servers;
 };
 
 // 创建代理服务器
@@ -202,8 +169,12 @@ var createAutoProxy = function() {
 			httpsPort: cfg.httpsPort,
 			type: cfg.type,
 			uiPort: p,
-			log: cfg.logLevel
-		}, null, false);
+			log: cfg.logLevel,
+			autoOpen: cfg.autoOpen,
+			breakHttps: cfg.breakHttps,
+			excludeHttps: cfg.excludeHttps,
+			sni: cfg.sni
+		}, false);
 		proxy.use(parsePageUrl());
 		// 没有出错的情况下
 		proxy.use(function(req, res, next) {
@@ -259,8 +230,7 @@ var initConfig = function(cfg) {
 	// 初始化
 	config.init();
 	var fileCfg = config.get();
-	['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel', "runCmd", "autoOpen"]
-	.forEach(function(key) {
+	configKey.forEach(function(key) {
 		if (cfg[key] ===  undefined || cfg[key] === null) {
 			if (fileCfg[key] !== undefined && fileCfg[key] !== null) {
 				cfg[key] = fileCfg[key];
@@ -274,13 +244,46 @@ var initConfig = function(cfg) {
 			config.set(key, cfg[key]);
 		}
 	}
+	setLogLevel();
+	// 保存配置
+	config.save();
+};
+
+var message = function(proxy) {
+	let defSaveProps = ['runCmd', "host", 'hosts', "log", 'breakHttps', 'excludeHttps', 'sni'];
+	// 别的进程发送的消息
+	process.on('message', function(message) {
+		if (!message.result || !typeof message.result === 'object') {
+			return;
+		}
+		log.debug('receive message');
+		if (message.type) {
+			switch(message.type) {
+			case "ftl_config":
+				let data = {};
+				defSaveProps.forEach(function(current) {
+					if (message.result[current] !== undefined && message.result[current] !== null) {
+						data[current] = message.result[current];
+					}
+				});
+				config.set(data);
+				// 每次服务变动都重新设置下log
+				config.save(defSaveProps);
+				setLogLevel();
+				break;
+			default:
+				log.error('收到未知的消息', message);
+			}
+		}
+	});
+};
+
+var setLogLevel = function() {
 	var logLevel = config.get('logLevel');
 	// 设置当前的log级别
 	if (logLevel) {
 		log.transports.console.level = logLevel;
 	}
-	// 保存配置
-	config.save();
 };
 
 module.exports = exports = function(cfg) {
@@ -292,6 +295,8 @@ module.exports = exports = function(cfg) {
 		var port = +proxyObj.uiPort !== 80  ? (":" + proxyObj.uiPort) : "";
 		var myUrl = "http://" + tools.localIps[0] + port;
 		createUi(myUrl);
+		message(proxyObj.proxy);
+		return config;
 	});
 	process.on('uncaughtException', tools.error);
 };
