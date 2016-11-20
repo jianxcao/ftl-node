@@ -92,7 +92,7 @@ var getConfig = function() {
 			}
 		} else if (type === 'string') {
 			program[current] = program[current].toLowerCase();
-			if (cfg[current] === '') {
+			if (program[current] === '') {
 				if (current === 'excludeHttps') {
 					cfg[current] = '';
 				}
