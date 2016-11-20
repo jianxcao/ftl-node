@@ -167,7 +167,7 @@ var isHaveShellControl= function(req, res) {
 };
 
 var saveHost = function(req, res) {
-	var data, keys = ["port", "host", "autoResponder", "runCmd", "httpsPort", "logLevel", "type", "uiPort", "autoProxy", "isVisitDir"], setData = {}, status = false;
+	var data, keys = ["port", "host", "autoResponder", "runCmd", "httpsPort", "logLevel", "type", "uiPort", "autoProxy"], setData = {}, status = false;
 	try{
 		if (req.body && req.body.data) {
 			data = req.body.data;

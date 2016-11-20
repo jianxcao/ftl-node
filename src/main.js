@@ -22,18 +22,11 @@ var tools = require('./tools'),
 	Promise = require('promise'),
 	url = require('url'),
 	catProxy = require('catproxy'),
+	defDeploy = require('./cfgProp'),
 	parseRemote = require('./parseRemote/parseRemoteMock');
 var app = express();
-var configKey = ['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 'logLevel', "runCmd", "autoOpen", "log", 'breakHttps', 'excludeHttps', 'sni'];
-var defCfg = {
-	port: 80,
-	httpsPort: 443,
-	type: 'http',
-	uiPort: 8001,
-	autoproxy: false,
-	sni: 1,
-	log: 'error'
-};
+var defCfg = defDeploy.cfg;
+var cfgKey = defDeploy.key;
 var SNICallback = function(servername, callback) {
 	try {
 		var certObj = catProxy.cert.getCert(servername);
@@ -230,7 +223,7 @@ var initConfig = function(cfg) {
 	// 初始化
 	config.init();
 	var fileCfg = config.get();
-	configKey.forEach(function(key) {
+	cfgKey.forEach(function(key) {
 		if (cfg[key] ===  undefined || cfg[key] === null) {
 			if (fileCfg[key] !== undefined && fileCfg[key] !== null) {
 				cfg[key] = fileCfg[key];
@@ -250,7 +243,6 @@ var initConfig = function(cfg) {
 };
 
 var message = function(proxy) {
-	let defSaveProps = ['runCmd', "host", 'hosts', "log", 'breakHttps', 'excludeHttps', 'sni'];
 	// 别的进程发送的消息
 	process.on('message', function(message) {
 		if (!message.result || !typeof message.result === 'object') {
@@ -261,14 +253,14 @@ var message = function(proxy) {
 			switch(message.type) {
 			case "ftl_config":
 				let data = {};
-				defSaveProps.forEach(function(current) {
+				cfgKey.forEach(function(current) {
 					if (message.result[current] !== undefined && message.result[current] !== null) {
 						data[current] = message.result[current];
 					}
 				});
 				config.set(data);
 				// 每次服务变动都重新设置下log
-				config.save(defSaveProps);
+				config.save(cfgKey);
 				setLogLevel();
 				break;
 			default:
