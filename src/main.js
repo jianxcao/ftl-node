@@ -27,6 +27,7 @@ var tools = require('./tools'),
 var app = express();
 var defCfg = defDeploy.cfg;
 var cfgKey = defDeploy.key;
+
 var SNICallback = function(servername, callback) {
 	try {
 		var certObj = catProxy.cert.getCert(servername);
@@ -162,8 +163,8 @@ var createAutoProxy = function() {
 			httpsPort: cfg.httpsPort,
 			type: cfg.type,
 			uiPort: p,
-			log: cfg.logLevel,
-			autoOpen: cfg.autoOpen,
+			log: cfg.log,
+			autoOpen: false,
 			breakHttps: cfg.breakHttps,
 			excludeHttps: cfg.excludeHttps,
 			sni: cfg.sni
@@ -172,11 +173,11 @@ var createAutoProxy = function() {
 		// 没有出错的情况下
 		proxy.use(function(req, res, next) {
 			// 这里的err指得时parsePath失败
-			var	headers = req.headers,
-				host = req.headers.host,
-				hostname = host.split(':')[0];
+			var isLocalIp = req.isLocalIp;
+			var serverPort = req.serverPort;
+			var port = req.port;
 			// 不可以访问目录
-			if (config.get('autoProxy') && req.pathObject.isDirectory && !net.isIP(hostname) && hostname !== 'localhost') {
+			if (config.get('autoProxy') && ((req.pathObject.isDirectory && !isLocalIp) || (isLocalIp && port !== serverPort))) {
 				next();
 			} else {
 				app(req, res);
@@ -184,26 +185,21 @@ var createAutoProxy = function() {
 		});
 		proxy.use(function(err, req, res, next) {
 			// 这里的err指得时parsePath失败
-			var	headers = req.headers,
-				host = req.headers.host,
-				hostname = host.split(':')[0],
-				urlObject = url.parse(req.url),
+			var	urlObject = url.parse(req.url),
 				pathname = urlObject.pathname,	
 				extname = path.extname(pathname);
+			var isLocalIp = req.isLocalIp;
+			var serverPort = req.serverPort;
+			var port = req.port;
 			// 本机静态资源
 			if (isServerStatic.test(pathname) || !config.get('autoProxy')) {
 				return app(req, res);
 			}
-			// 找不到文件
-			if (err && extname !== '.ftl' && !net.isIP(hostname) && hostname !== 'localhost') {
+			if ((!isLocalIp && extname !== '.ftl') || (isLocalIp && serverPort !== port)) {
+				log.debug(1);
 				next();
 			} else {
-				if (err) {
-					next(err);
-				} else {
-					// 回去走老流程
-					app(req, res);
-				}
+				next(err);
 			}
 		});
 		proxy.init();
@@ -252,7 +248,7 @@ var message = function(proxy) {
 		if (message.type) {
 			switch(message.type) {
 			case "ftl_config":
-				let data = {};
+				var data = {};
 				cfgKey.forEach(function(current) {
 					if (message.result[current] !== undefined && message.result[current] !== null) {
 						data[current] = message.result[current];
@@ -271,7 +267,7 @@ var message = function(proxy) {
 };
 
 var setLogLevel = function() {
-	var logLevel = config.get('logLevel');
+	var logLevel = config.get('log');
 	// 设置当前的log级别
 	if (logLevel) {
 		log.transports.console.level = logLevel;

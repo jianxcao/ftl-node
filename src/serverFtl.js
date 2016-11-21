@@ -25,14 +25,9 @@ exports = module.exports = function serveFtl(port) {
   	return function serveFtl(req, res, next) {
 	//  重置错误提示
 	consoleErrors = [];
-	var isSecure = req.connection.encrypted || req.connection.pai;
-	var host = req.headers.host;
-	var protocol = !!isSecure ? "https" : 'http';
-	var fullUrl = /^http.*/.test(req.url) ? req.url : (protocol + '://' + host + req.url);
-	var	urlObject = url.parse(fullUrl);
-	var webPort = urlObject.port || (protocol === "http" ? '80' : '443');
+	var webPort = req.port;
 	var pathObject = req.pathObject;
-	var ext = path.extname(pathObject.path).slice(1);
+	var ext = pathObject.ext;
 	var tmpFilePaths;
 	var jarVersion = "";
 	webPort = +webPort;

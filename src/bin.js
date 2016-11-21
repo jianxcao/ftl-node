@@ -18,7 +18,7 @@ var list = function(val){
 program
 	.version(pkg.version)
 	.option('-v, --version', '版本号码')
-	.option('-a --autoProxy [value]', "自动代理true|false", /^(true|false)$/i)
+	.option('-a --autoProxy [value]', "自动代理true|false, 如果想当成代理服务器使用，该参数必须为true", /^(true|false)$/i)
 	.option('-t --type [value]', 'http或者https服务器类型, 同时开启2种服务器用all表示', /^(http|https|all)$/i)
 	.option('-p --port [list]', '代理端口 默认  http: 80, https: 443, 多个端口用，分割第一个表示http，第二个表示https', list)
 	.option('-c --cert', '生成根证书')

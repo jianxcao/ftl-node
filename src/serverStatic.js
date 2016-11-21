@@ -1,4 +1,3 @@
-var path = require('path');
 var fontsFileExt = ["eot", "svg", "ttf", "woff"];
 var excludeFileExt = ["ftl", "ejs", "jsp"];
 exports = module.exports = function serveStatic() {
@@ -8,7 +7,7 @@ exports = module.exports = function serveStatic() {
 			return next();
 		}
 		var pathObject = req.pathObject;
-		var ext = path.extname(pathObject.path).replace('.', "");
+		var ext = pathObject.ext;
 		if (!~excludeFileExt.indexOf(ext)) {
 			try{
 				var absPath = pathObject.fullPath;
