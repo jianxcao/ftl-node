@@ -196,7 +196,6 @@ var createAutoProxy = function() {
 				return app(req, res);
 			}
 			if ((!isLocalIp && extname !== '.ftl') || (isLocalIp && serverPort !== port)) {
-				log.debug(1);
 				next();
 			} else {
 				next(err);
