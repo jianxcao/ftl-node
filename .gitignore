@@ -3,3 +3,5 @@ node_modules
 .DS_Store
 lib/jar/freemarker.jar
 npm-debug.log
+.vscode
+fileCache
