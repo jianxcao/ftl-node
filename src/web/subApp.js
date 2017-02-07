@@ -213,10 +213,9 @@ var err500 = function(err, req, res) {
 	});
 };
 
-module.exports = function(server, autoProxyUrl) {
+module.exports = function(wss) {
 	app.locals.baseUrl = "";
 	app.locals.cdnBaseUrl=  "/static";
-	app.locals.autoProxyUrl = autoProxyUrl;
 	app.engine('.ejs', require('ejs').__express);
 	app.set('views', path.join( __dirname, '../../views'));
 	app.set('view engine', 'ejs');
@@ -236,7 +235,7 @@ module.exports = function(server, autoProxyUrl) {
 	app.post(["/sys/set_config_ajax.html", "/sys/set_config_ajax"], saveHost);
 	app.use(err404);
 	app.use(err500);
-	server.on('request', app);
-	var notifiyServer = notifiy(server);
-	app.set('notifiyServer', notifiyServer);
+	var notifiyServer = notifiy(wss);
+	app.set('notifiyServer', notifiyServer);	
+	return app;
 };

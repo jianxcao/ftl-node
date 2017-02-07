@@ -8,30 +8,28 @@ var getGuid = function() {
 };
 var send = function(message) {
 	for(var key in clients) {
-		if (clients[key].readyState === clients[key].CONNECTING || clients[key].readyState === clients[key].OPEN) {
-			clients[key].send(message);
+		if (clients[key].connected) {
+			clients[key].emit("message", message);
+		} else {
+			delete clients[key];
 		}
 	}
 };
 var close = function() {
 	for(var key in clients) {
-		if (clients[key].readyState === clients[key].CLOSED || clients.CLOSING) {
+		if (clients[key].disconnected) {
 			delete clients[key];
 		}
 	}
 };
 
-exports = module.exports = function(server) {
-	var wss = new WebSocketServer({server: server});
-	wss.on('connection', function(ws) {
+exports = module.exports = function(wss) {
+	wss.of('/ftl').on('connection', function(ws) {
 		log.info('有服务器连接到socket');
 		clients[getGuid()] = ws;
-		ws.on('close', function() {
+		ws.on('disconnect', function() {
 			close();
 			log.info('socket服务器关闭');
-		});
-		ws.on('error', function(err) {
-			log.error(err);
 		});
 	});
 	return {

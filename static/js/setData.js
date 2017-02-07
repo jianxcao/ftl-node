@@ -177,7 +177,6 @@ define(["jquery", "config", "js/infoTip", "js/command"], function($, config, inf
 				} else {
 					try {
 						if (data.responseJSON) {
-							console.log(data.responseJSON);
 							result.data = data.responseJSON;
 							result.data.host = result.data.host || [];
 						}

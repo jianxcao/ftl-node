@@ -18,7 +18,6 @@ var tools = require('./tools'),
 	merge = require('merge'),
 	tls = require('tls'),
 	net = require('net'),
-	getPort = require('empty-port'),
 	Promise = require('promise'),
 	url = require('url'),
 	catProxy = require('catproxy'),
@@ -115,102 +114,57 @@ var openUi = function(port) {
 	childProcess.exec([cmd, uri].join(' '));
 };
 
-// 创建ui界面
-var createUi = function(autoProxyUrl) {
-	var cfg = config.get();
-	var server = http.createServer();
-	var my = subApp(server, autoProxyUrl);
-	var port = +cfg.uiPort;
-	if (port === 0) {
-		return;
-	}
-	server.listen(port, function() {
-		log.info('ftl-node, ui界面地址: ' + "http://" + tools.localIps[0] + ":" + port + "/manager.html");
-		if (cfg.autoOpen) {
-			openUi(port);
-		}
-	});
-	server.on('error', function(err) {
-		tools.error(err);
-		process.exit(1);
-	});
-	return server;
-};
-
 // 创建代理服务器
 var createAutoProxy = function() {
 	var cfg = config.get();
 	var ProxyServer = catProxy.Server;
 	var isServerStatic = new RegExp("^" + app.locals.cdnBaseUrl);
-	return new Promise(function(resolve, reject) {
-		if (+cfg.uiPort === 0) {
-			resolve(cfg.uiPort);
+	var proxy = new ProxyServer({
+		port: cfg.port,
+		httpsPort: cfg.httpsPort,
+		type: cfg.type,
+		uiPort: cfg.uiPort,
+		log: cfg.log,
+		autoOpen: false,
+		breakHttps: cfg.breakHttps,
+		excludeHttps: cfg.excludeHttps,
+		sni: cfg.sni
+	}, false);
+	proxy.use(parsePageUrl());
+	// 没有出错的情况下
+	proxy.use(function(req, res, next) {
+		// 这里的err指得时parsePath失败
+		var isLocalIp = req.isLocalIp;
+		var serverPort = req.serverPort;
+		var port = req.port;
+		// 不可以访问目录
+		if (config.get('autoProxy') && ((req.pathObject.isDirectory && !isLocalIp) || (isLocalIp && port !== serverPort))) {
+			next();
 		} else {
-			getPort({
-				startPort: 10001
-			}, function(err, port) {
-				if (err) {
-					reject(err);
-				} else {
-					resolve(port);
-				}
-			});
-		}		
-	})
-	.then(function(p) {
-		var proxy = new ProxyServer({
-			port: cfg.port,
-			httpsPort: cfg.httpsPort,
-			type: cfg.type,
-			uiPort: p,
-			log: cfg.log,
-			autoOpen: false,
-			breakHttps: cfg.breakHttps,
-			excludeHttps: cfg.excludeHttps,
-			sni: cfg.sni
-		}, false);
-		proxy.use(parsePageUrl());
-		// 没有出错的情况下
-		proxy.use(function(req, res, next) {
-			// 这里的err指得时parsePath失败
-			var isLocalIp = req.isLocalIp;
-			var serverPort = req.serverPort;
-			var port = req.port;
-			// 不可以访问目录
-			if (config.get('autoProxy') && ((req.pathObject.isDirectory && !isLocalIp) || (isLocalIp && port !== serverPort))) {
-				next();
-			} else {
-				app(req, res);
-			}
-		});
-		proxy.use(function(err, req, res, next) {
-			// 这里的err指得时parsePath失败
-			var	urlObject = url.parse(req.url),
-				pathname = urlObject.pathname,	
-				extname = path.extname(pathname);
-			var isLocalIp = req.isLocalIp;
-			var serverPort = req.serverPort;
-			var port = req.port;
-			// 本机静态资源
-			if (isServerStatic.test(pathname) || !config.get('autoProxy')) {
-				return app(req, res);
-			}
-			if ((!isLocalIp && extname !== '.ftl') || (isLocalIp && serverPort !== port)) {
-				next();
-			} else {
-				next(err);
-			}
-		});
-		proxy.init();
-		return {
-			proxy: proxy,
-			uiPort: p
-		};
-	})
-	.then(null, function(err) {
-		log.error(err);
-		process.exit(1);
+			app(req, res);
+		}
 	});
+	proxy.use(function(err, req, res, next) {
+		// 这里的err指得时parsePath失败
+		var	urlObject = url.parse(req.url),
+			pathname = urlObject.pathname,	
+			extname = path.extname(pathname);
+		var isLocalIp = req.isLocalIp;
+		var serverPort = req.serverPort;
+		var port = req.port;
+		// 本机静态资源
+		if (isServerStatic.test(pathname) || !config.get('autoProxy')) {
+			return app(req, res);
+		}
+		if ((!isLocalIp && extname !== '.ftl') || (isLocalIp && serverPort !== port)) {
+			next();
+		} else {
+			next(err);
+		}
+	});
+	return proxy.init().then(function(){
+		return proxy;
+	})	
 };
 
 // 初始化配置
@@ -237,7 +191,7 @@ var initConfig = function(cfg) {
 	config.save();
 };
 
-var message = function(proxy) {
+var message = function() {
 	// 别的进程发送的消息
 	process.on('message', function(message) {
 		if (!message.result || !typeof message.result === 'object') {
@@ -278,12 +232,20 @@ module.exports = exports = function(cfg) {
 	comInit();
 	setErr();
 	createAutoProxy()
-	.then(function(proxyObj) {
-		var port = +proxyObj.uiPort !== 80  ? (":" + proxyObj.uiPort) : "";
+	.then(function(proxy) {
+		var port = +cfg.uiPort;
+		// uiPort 为0的时候表示没有ui
+		if (!port) {
+			return;
+		}
 		var myUrl = "http://" + tools.localIps[0] + port;
-		createUi(myUrl);
-		message(proxyObj.proxy);
-		return config;
+		// 用catprox的ui服务器, 用catproxy的 wsserver
+		proxy.ui.app.use(subApp(proxy.ui.wsServer));
+		log.info('ftl-node, ui界面地址: ' + "http://" + tools.localIps[0] + ":" + port + "/manager.html");	
+		message();
+	})
+	.then(null, function(err) {
+		console.log(err);
 	});
 	process.on('uncaughtException', tools.error);
 };

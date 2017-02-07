@@ -29,9 +29,7 @@
 	<div class="collapse navbar-collapse" id="nav">
 		<ul class="nav navbar-nav">
 			<li class="active"><a href="<%=baseUrl%>/sys/manager.html">服务器配置</a></li>
-            <%if (autoProxyUrl) {%>
-                <li class="active"><a href="<%=autoProxyUrl%>">host配置</a></li>
-            <%}%>
+            <li class="active"><a href="/c/index">host配置</a></li>
 		</ul>
 	</div>
 </nav>
@@ -138,7 +136,8 @@
 		paths: {
 			jquery: "lib/jquery",
 			tpl: "lib/tpl",
-			bootstrap: "lib/bootstrap/js/bootstrap.min"
+			bootstrap: "lib/bootstrap/js/bootstrap.min",
+			io: "lib/socket.io"
 		},
 		shim: {
 			jquery: {

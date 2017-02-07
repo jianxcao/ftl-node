@@ -1,32 +1,43 @@
 // 通知
 // 基于websocket
-define(["jquery", "js/console"], function($, myConsole) {
+define(["jquery", "js/console", "io"], function($, myConsole, io) {
 	var notifiy = {
 		init: function() {
 			var host = window.document.location.host;
-			var ws = new WebSocket('ws://' + host);
+			ws = io.connect('ws://' + host + "/ftl");
 			this.ws = ws;
 			this.initEvent();
 		},
 		initEvent: function() {
 			var com = this;
 			var ws = this.ws;
-			ws.addEventListener("open", function() {
-				console.log('socket服务器开启');
-			}, false);
-			ws.addEventListener('message', function(event) {
-				var data = event.data;
-				try{
-					data = JSON.parse(data);
+			ws.once('connect', function () {
+				ws.on('message', function(data) {
+					if (typeof data === 'string') {
+						data = JSON.parse(data);
+					}
 					com.send(data);
-				}catch (e) {
-					// console.error("服务器发送了一个未知的消息:" + data);
-				}
-			}, false);
-			// 监听Socket的关闭
-			ws.addEventListener('close', function() {
-				console.log('socket服务器关闭');
+				});				
 			});
+			
+			ws.on('connect_timeout', ()=> {
+				console.log('connect_timeout');
+			});
+			
+			ws.on('reconnecting', ()=> {
+				console.log('reconnecting');
+			});
+			
+			ws.on('connect_error', () => {
+				console.log('connect error');
+			});
+			
+			ws.on('close', () => {
+				ws = null;
+				console.log('ws关闭'); 
+			});
+
+			ws.on('error', err => console.error(err));			
 		},
 		/**
 		 * 发送一个消息，消息的格式是
