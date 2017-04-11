@@ -6,6 +6,7 @@ exports.cfg = {
 	type: 'http',
 	uiPort: 8001,
 	autoproxy: false,
+	autoOpen: true,
 	sni: 1,
-	log: 'error'
+	log: 'info'
 };

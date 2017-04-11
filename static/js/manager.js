@@ -1,5 +1,8 @@
 define(['jquery', "js/tplToHtml", "js/setData", "lib/Sortable", "js/infoTip", "js/command", "lib/scrollBar/scrollBar", "lib/keymaster", "bootstrap"],
  function($, tplToHtml, setData, Sortable, infoTip, command, scrollBar, keymaster) {
+	 keymaster.filter = function(event) {
+		return true;
+	};
 	var manager = {
 		cache: {},
 		init: function(configModel) {

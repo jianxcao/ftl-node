@@ -1,6 +1,7 @@
 var log = require('./log');
 var ip = require('ip');
 var os = require('os');
+var childProcess = require('child_process');
 var portReg = /EADDRINUSE\s*[^0-9]*([0-9]+)/i;
 exports.error = function(err){
 	var port;
@@ -35,3 +36,19 @@ var localIps =  getIps();
 localIps.push(ip.loopback('ipv4'));
 exports.localIps = localIps;
 exports.getIps = getIps;
+
+// 打开界面
+exports.openUrl = function(url) {
+	if (!url) {
+		return;
+	}
+	var cmd;
+	if (process.platform === 'win32') {
+		cmd = 'start';
+	} else if (process.platform === 'linux') {
+		cmd = 'xdg-open';
+	} else if (process.platform === 'darwin') {
+		cmd = 'open';
+	}
+	childProcess.exec([cmd, url].join(' '));
+};

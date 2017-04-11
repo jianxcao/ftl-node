@@ -12,7 +12,6 @@ var tools = require('./tools'),
 	log = require('./log'),
 	subApp = require('./web/subApp'),
 	path = require('path'),
-	childProcess = require('child_process'),
 	cookieParser = require('cookie-parser'),
 	session = require('express-session'),
 	merge = require('merge'),
@@ -98,22 +97,6 @@ var comInit = function() {
 	app.use(serverFtl());
 };
 
-// 打开界面
-var openUi = function(port) {
-	port = + port;
-	// 启动一个默认浏览器打开后台管理页面
-	port  = port === 80 ? '' : (":" + port);
-	var cmd, uri = "http://" + tools.localIps[0] + port + "/manager.html";
-	if (process.platform === 'win32') {
-		cmd = 'start';
-	} else if (process.platform === 'linux') {
-		cmd = 'xdg-open';
-	} else if (process.platform === 'darwin') {
-		cmd = 'open';
-	}
-	childProcess.exec([cmd, uri].join(' '));
-};
-
 // 创建代理服务器
 var createAutoProxy = function() {
 	var cfg = config.get();
@@ -164,7 +147,7 @@ var createAutoProxy = function() {
 	});
 	return proxy.init().then(function(){
 		return proxy;
-	})	
+	});
 };
 
 // 初始化配置
@@ -241,7 +224,11 @@ module.exports = exports = function(cfg) {
 		var myUrl = "http://" + tools.localIps[0] + port;
 		// 用catprox的ui服务器, 用catproxy的 wsserver
 		proxy.ui.app.use(subApp(proxy.ui.wsServer));
-		log.info('ftl-node, ui界面地址: ' + "http://" + tools.localIps[0] + ":" + port + "/manager.html");	
+		var url = "http://" + tools.localIps[0] + ":" + port + "/manager"; 
+		if (config.get('autoOpen')) {
+			tools.openUrl(url);
+		}
+		log.info('ftl-node, ui界面地址: ' + url);	
 		message();
 	})
 	.then(null, function(err) {
