@@ -7,7 +7,7 @@ var tools = require('./tools');
 var log = require('./log');
 var promise = require('promise');
 var connectMsg = require('./process/connectMsgServer');
-
+var path = require('path');
 connectMsg()
 .then(function () {
 	// 启动子进程
@@ -19,7 +19,7 @@ connectMsg()
 			}
 		};
 		// 通过不同系统判断采用不同权限启动一个进程
-		sudo(['node', 'src/process/child.js'].concat(process.argv.slice(2)), options);
+		sudo(['node', path.join(__dirname, 'process/child.js')].concat(process.argv.slice(2)), options);
 	};
 
 	child();
