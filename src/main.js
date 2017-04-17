@@ -210,11 +210,12 @@ var setLogLevel = function() {
 	}
 };
 
+process.on('uncaughtException', tools.error);
 module.exports = exports = function(cfg) {
 	initConfig(cfg);
 	comInit();
 	setErr();
-	createAutoProxy()
+	return createAutoProxy()
 	.then(function(proxy) {
 		var port = +cfg.uiPort;
 		// uiPort 为0的时候表示没有ui
@@ -226,13 +227,19 @@ module.exports = exports = function(cfg) {
 		proxy.ui.app.use(subApp(proxy.ui.wsServer));
 		var url = "http://" + tools.localIps[0] + ":" + port + "/manager"; 
 		if (config.get('autoOpen')) {
-			tools.openUrl(url);
+			proxy.ui.uiServer.once('listening', function () {
+				tools.openUrl(url);
+			});
 		}
 		log.info('ftl-node, ui界面地址: ' + url);	
 		message();
+		return {
+			proxy: proxy,
+			config: config
+		};
 	})
 	.then(null, function(err) {
-		console.log(err);
+		log.error(err);
+		return Promise.reject(err);
 	});
-	process.on('uncaughtException', tools.error);
 };

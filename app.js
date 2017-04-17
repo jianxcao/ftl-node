@@ -1,4 +1,2 @@
-#!/usr/bin/env node
-
-// bin加载
-require('./src/bin');
+var app = require('./src/index');
+module.exports = app;

@@ -3,6 +3,7 @@ var basePath = path.join(__dirname, "../lib/jar");
 var log = require('../src/log');
 var fs = require('fs');
 var fsExtra = require('fs-extra');
+var tools = require('./tools');
 // 缓存的jar包版本
 var cachePath= null;
 //  获取当前的jarfile的路径
@@ -72,11 +73,11 @@ var setJarFile = function(version, rootPath) {
 	if (fs.existsSync(jarPath)) {
 		// 没有缓存，则拷贝覆盖 freemarker.jar 文件
 		if (cachePath !== jarPath) {
+			// 生成零时jar包路径放到其他地方
 			fsExtra.copySync(jarPath, path.join(basePath, "freemarker.jar"));
-			// log.info('成功设置jar包，jar包原始路径:' + jarPath);
+			log.info('成功设置jar包，jar包原始路径:' + jarPath);
 		}
 		cachePath =  jarPath;
-		log.info(jarPath);
 	} else {
 		throw  new Error("查找jar文件出错，jar文件路径: " + jarPath);
 	}
