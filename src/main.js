@@ -113,9 +113,10 @@ var createAutoProxy = function() {
 		excludeHttps: cfg.excludeHttps,
 		sni: cfg.sni
 	}, false);
-	proxy.use(parsePageUrl());
 	// 没有出错的情况下
-	proxy.use(function(req, res, next) {
+	proxy
+	.use(parsePageUrl())
+	.use(function(req, res, next) {
 		// 这里的err指得时parsePath失败
 		var isLocalIp = req.isLocalIp;
 		var serverPort = req.serverPort;
@@ -126,8 +127,8 @@ var createAutoProxy = function() {
 		} else {
 			app(req, res);
 		}
-	});
-	proxy.use(function(err, req, res, next) {
+	})
+	.use(function(err, req, res, next) {
 		// 这里的err指得时parsePath失败
 		var	urlObject = url.parse(req.url),
 			pathname = urlObject.pathname,	
@@ -145,7 +146,8 @@ var createAutoProxy = function() {
 			next(err);
 		}
 	});
-	return proxy.init().then(function(){
+	return proxy.init()
+	.then(function(){
 		return proxy;
 	});
 };
