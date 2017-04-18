@@ -11,14 +11,21 @@ exports = module.exports = function serveStatic() {
 		if (!~excludeFileExt.indexOf(ext)) {
 			try{
 				var absPath = pathObject.fullPath;
-				var headers = {};
+				var headers = {
+				};
+				headers['cache-control'] = "no-store";
+				// 时间点表示什么时候文件过期，缺点，服务器和客户端必须有严格的时间同步
+				// 旧浏览器兼容  expires -1 表示不缓存
+				headers.expires = "-1";					
 				// 字体文件
 				if (~fontsFileExt.indexOf(ext)) {
 					headers['Access-Control-Allow-Origin'] = "*";
 				}
 				// 渲染文件
 				return res.sendFile(absPath, {
-					headers: headers
+					headers: headers,
+					maxAge: -1,
+					lastModified: false
 				});
 			} catch(e) {
 				next(e);
