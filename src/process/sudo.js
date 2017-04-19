@@ -8,10 +8,10 @@ var connectMsg = require('./connectMsgServer');
 var tools = require('../tools');
 var log = require('../log');
 var read = require('read');
-var prompt = require('prompt');
 var path = require('path');
 var fs = require('fs');
 var fse = require('fs-extra');
+
 // 缓存密码的文件
 var passwordPath = path.join(tools.tmpPath, '.pwd');
 var exits = fs.existsSync(passwordPath);

@@ -1,4 +1,4 @@
-var WebSocketServer = require('ws').Server;
+
 var log = require('../log');
 var clients = {};
 
