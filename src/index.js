@@ -128,7 +128,7 @@ module.exports = function app() {
 	// 生成证书
 	if (program.cert) {
 		if (cert.isRootCertExits()) {
-			promptCert(colors.green('已经存在跟证书，是否覆盖?'), function () {
+			promptCert(colors.green('已经存在根证书，是否覆盖?'), function () {
 				cert.setRootCert();
 			});
 		} else {
@@ -155,7 +155,12 @@ function promptCert (prompt, callback) {
 	if (!callback) {
 		return;
 	}
+	
 	read({ prompt: prompt}, function (error, answer) {
+		if (error) {
+			log.error(error);
+			return process.exit(1);
+		}		
 		if (answer === '是' || answer === 'yes' || answer === 'y') {
 			callback();
 			process.exit(0);

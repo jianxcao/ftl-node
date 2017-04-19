@@ -42,4 +42,3 @@ function command (server) {
 	});
 };
 process.on('uncaughtException', tools.error);
-

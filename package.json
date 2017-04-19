@@ -1,11 +1,11 @@
 {
   "name": "ftl-node",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "description": "ftl parse to html",
   "main": "app.js",
   "dependencies": {
     "body-parser": "^1.12.3",
-    "catproxy": "^1.1.1",
+    "catproxy": "^1.2.5",
     "clone": "^2.0.0",
     "colors": "^1.1.2",
     "commander": "^2.8.1",

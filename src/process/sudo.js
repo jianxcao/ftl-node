@@ -142,11 +142,12 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 				if (++prompts > 1) {
 					cachedPassword = null;
 				}
-				if (cachedPassword) {
-					stdin.write(cachedPassword + '\n');
-				} else {
-					isRead = true;
-				}
+				// if (cachedPassword) {
+				// 	stdin.write(cachedPassword + '\n');
+				// } else {
+					
+				// }
+				isRead = true;
 			} else {
 				result += cur + '\n';
 			}
@@ -154,12 +155,22 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 		callback(null, result);
 		if (isRead) {
 			read({ prompt: 'password:', silent: true }, function (error, answer) {
-				fse.outputFileSync(passwordPath, answer);
-				cachedPassword = answer;
-				stdin.write(answer + '\n');
+				if (error) {
+					if (error.message === 'canceled') {
+						process.exit(0);
+					} else {
+						log.error(error);
+						process.exit(1);
+					}
+				} else {
+					fse.outputFileSync(passwordPath, answer);
+					cachedPassword = answer;
+					stdin.write(answer + '\n');
+				}
 			});
 		}
 	});
+
 	connectMsgServer.once('msg', function (msg) {
 		if (msg.type === 'server' && msg.action === 'start' && msg.status === 100) {
 			isPipe = true;
@@ -167,9 +178,14 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 			stderr.pipe(process.stderr);
 		}
 	});
+
 	stderr
 	.pipe(stderrStream)
 	.pipe(process.stderr);
+	child.once('SIGINT', function () {
+		console.log('sigint111');
+		process.exit(0);
+	});
 
 	// 数据直接输出到主进程
 	stdout.pipe(process.stdout);
