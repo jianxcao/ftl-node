@@ -4,7 +4,7 @@ var	fs = require('fs');
 var pkg = require('../package');
 var log = require('./log');
 var catProxy = require('catproxy');
-var prompt = require('prompt');
+var read = require('read');
 var colors = require('colors');
 var main = require('./main');
 var merge  = require('merge');
@@ -128,28 +128,8 @@ module.exports = function app() {
 	// 生成证书
 	if (program.cert) {
 		if (cert.isRootCertExits()) {
-			prompt.start({noHandleSIGINT: true});
-			prompt.get({
-				properties: {
-					isOverride: {
-						type: 'string',
-						required: true,
-						message: '请输入 y 或者 n',
-						description: colors.green("已经存在跟证书，是否覆盖?"),
-						conform: function(val) {
-							return val === 'yes' || val === 'no' || val === 'n' || val === 'y';
-						}
-					}
-				}
-			}, function (err, result) {
-				if (err) {
-					process.exit(1);
-				} else {
-					if (result.isOverride === 'yes' || result.isOverride === 'y') {
-						cert.setRootCert();
-					}
-					process.exit(0);
-				}
+			promptCert(colors.green('已经存在跟证书，是否覆盖?'), function () {
+				cert.setRootCert();
 			});
 		} else {
 			cert.setRootCert();
@@ -169,4 +149,20 @@ module.exports = function app() {
 			return merge(result, res);
 		});
 	}
+};
+
+function promptCert (prompt, callback) {
+	if (!callback) {
+		return;
+	}
+	read({ prompt: prompt}, function (error, answer) {
+		if (answer === '是' || answer === 'yes' || answer === 'y') {
+			callback();
+			process.exit(0);
+		} else if (answer === '否' || answer === 'n' || answer === 'n') {
+			process.exit(0);
+		} else {
+			promptCert(colors.green('请输入y或者n?'), callback);
+		}
+	});	
 };

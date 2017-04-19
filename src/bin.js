@@ -9,7 +9,15 @@ var promise = require('promise');
 var connectMsg = require('./process/connectMsgServer');
 var path = require('path');
 connectMsg()
-.then(function () {
+.then(function (result) {
+	var server = result.server;
+	server.on('message', function (msg) {
+		msg = tools.parseMsg(msg);
+		if (msg.type) {
+			server.emit('msg', msg);
+		}
+	});
+	command(server);
 	// 启动子进程
 	var child = function () {
 		var options = {
@@ -26,5 +34,12 @@ connectMsg()
 	log.info('ftl-node主进程启动');
 
 }, tools.error);
+
+// 命令相关得请求
+function command (server) {
+	server.on('msg', function (msg) {
+		// console.log('msg', msg);
+	});
+};
 process.on('uncaughtException', tools.error);
 

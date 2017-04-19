@@ -3,12 +3,12 @@ var through2 = require('through2');
 var spawn = require('child_process').spawn;
 var inpathSync = require('inpath').sync;
 var path = process.env['PATH'].split(':');
-var readline = require('readline');
 var sudoBin = inpathSync('sudo', path);
 var connectMsg = require('./connectMsgServer');
 var tools = require('../tools');
 var log = require('../log');
 var read = require('read');
+var prompt = require('prompt');
 var path = require('path');
 var fs = require('fs');
 var fse = require('fs-extra');
@@ -35,16 +35,6 @@ function start (command, options, connectMsgServer, connectMsgPort) {
 		var stderr = child.stderr;
 		var stdout = child.stdout;
 		process.stdin.pipe(child.stdin);
-		// 用于进程通讯的 msgServer
-		var msg = function (msg) {
-			var msg = tools.parseMsg(msg);
-			if (msg.type === 'server' && msg.action === 'start' && msg.status === 100) {
-				isPipe = true;
-				stdCorrectStream.pipe(process.stderr);
-				stderrStream.pipe(process.stdout);
-				resolve(child);
-			}
-		};		
 		// 碰到需要密码，就干掉当前子进程，从新开启一个 sudo的进程
 		var stderrStream = through2(function(chunk, enc, callback) {
 			var err = '请用sudo管理员权限打开';
@@ -52,47 +42,55 @@ function start (command, options, connectMsgServer, connectMsgPort) {
 			// 进程需要sudo打开
 			if (str.indexOf(err) > -1) {
 				isPipe = true;
-				stdCorrectStream.unpipe(process.stderr);
-				stderrStream.unpipe(process.stdout);
+				connectMsgServer.removeListener('msg', msg);
+				stderrStream.unpipe(process.stderr);
 				stderr.unpipe(stderrStream);
-				stdout.unpipe(stdCorrectStream);
 				stderrStream = null;
-				stdCorrectStream = null;
-				connectMsgServer.removeListener('message', msg);
 				resolve(sudo(command, options, connectMsgServer, connectMsgPort));
 				// 此处结束child进程
 				child.kill();
 			}
 			callback(null, chunk);
 		});
+		
+		// 用于进程通讯的 msgServer
+		var msg = function (msg) {
+			if (msg.type === 'server' && msg.status === 100 && (msg.action === 'start' || msg.action === 'cert')) {
+				isPipe = true;
+				stderrStream.pipe(process.stderr);
+				stdout.pipe(process.stdout);
+				resolve(child);
+				if (msg.action === 'cert') {
+					child.once('exit', function () {
+						process.exit(0);
+					});
+				}
+			}
+		};		
 
-		var stdCorrectStream = through2(function(chunk, enc, callback) {
-			callback(null, chunk);
-		});
-		connectMsgServer.once('message', msg);
+		connectMsgServer.once('msg', msg);
 
 		stderr.pipe(stderrStream);
-		stdout.pipe(stdCorrectStream);
-
-		child.on('error', function (s) {
+	
+		child.once('error', function (s) {
 			if (!isPipe) {
-				stdCorrectStream.pipe(process.stderr);
-				stderrStream.pipe(process.stdout);
+				stderrStream.pipe(process.stderr);
+				stdout.pipe(process.stdout);
 				resolve(child);
 			}
 		});
 
-		child.on('exit', function (s) {
+		child.once('exit', function (s) {
 			if (!isPipe) {
 				isPipe = true;
-				stdCorrectStream.pipe(process.stderr);
-				stderrStream.pipe(process.stdout);
+				stderrStream.pipe(process.stderr);
+				stdout.pipe(process.stdout);
 				// 断开主进程写入数据
 				process.stdin.unpipe(child.stdin);
+				resolve(child);
 				process.nextTick(function () {
 					process.exit(s);
 				});
-				resolve(child);
 			}
 		});
 	});
@@ -122,8 +120,8 @@ function main(command, options) {
 
 // 尝试用sudo权限启动
 function sudo (command, options, connectMsgServer, connectMsgPort) {
-	var prompt = '#node-sudo-passwd#';
-	var args = [ '-S', '-p', prompt ];
+	var replacePrompt = '#node-sudo-passwd#';
+	var args = [ '-S', '-p', replacePrompt ];
 	// 添加一个内置的参数用于传递 进程交流的端口
 	command.push('--connectMsgPort', connectMsgPort);
 	args.push.apply(args, command);
@@ -138,28 +136,31 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 		var str = chunk.toString();
 		str = str.split('\n');
 		var result = '';
+		var isRead = false;
 		str.forEach(function (cur) {
-			if (cur === prompt) {
+			if (cur === replacePrompt) {
 				if (++prompts > 1) {
 					cachedPassword = null;
 				}
 				if (cachedPassword) {
 					stdin.write(cachedPassword + '\n');
 				} else {
-					read({ prompt: 'password:', silent: true }, function (error, answer) {
-						fse.outputFileSync(passwordPath, answer);
-						cachedPassword = answer;
-						stdin.write(answer + '\n');
-					});
+					isRead = true;
 				}
 			} else {
 				result += cur + '\n';
 			}
 		});
 		callback(null, result);
+		if (isRead) {
+			read({ prompt: 'password:', silent: true }, function (error, answer) {
+				fse.outputFileSync(passwordPath, answer);
+				cachedPassword = answer;
+				stdin.write(answer + '\n');
+			});
+		}
 	});
-	connectMsgServer.once('message', function (msg) {
-		var msg = tools.parseMsg(msg);
+	connectMsgServer.once('msg', function (msg) {
 		if (msg.type === 'server' && msg.action === 'start' && msg.status === 100) {
 			isPipe = true;
 			stderr.unpipe(stderrStream).unpipe(process.stderr);
@@ -173,7 +174,7 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 	// 数据直接输出到主进程
 	stdout.pipe(process.stdout);
 
-	child.on('exit', function (s) {
+	child.once('exit', function (s) {
 		process.exit(s);
 	});
 	return child;

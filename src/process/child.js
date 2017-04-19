@@ -4,14 +4,14 @@ var Promise = require('promise');
 var log = require('../log');
 var dgram = require('dgram');
 var clientSocket = dgram.createSocket('udp4');
+var merge = require('merge');
 var lis = function (server) {
 	return new Promise(function (resolve, reject) {
 		var succ =  function () {
-			server.removeListener('error', fail);
-			server.removeListener('listening', succ);
 			resolve();
 		};
 		var fail = function () {
+			console.log('fail');		
 			reject();
 		};
 		server.once('error', fail);
@@ -28,14 +28,18 @@ app()
 	var connectMsgPort = +program.connectMsgPort;
 	var send = function (status, callback) {
 		callback = callback || tools.loop;
-		if (!typeof msg === 'number') {
-			return;
-		}
+		var t = typeof status;
 		var result = {
 			action: 'start',
-			type: 'server',
-			status: status
+			type: 'server'
+		};		
+		if (t === 'object') {
+			result = merge(result, status);
+		}
+		if (t === 'number') {
+			result.status = status;
 		};
+
 		var msg = JSON.stringify(result);
 		if (!connectMsgPort) {
 			return;
@@ -54,7 +58,10 @@ app()
 		}
 		if (program.cert) {
 			resolve();
-			send(100);
+			send({
+				status: 100,
+				action: 'cert'
+			});
 		}
 		var servers = proxy.servers;
 		var uiServer = proxy.ui.uiServer;		
