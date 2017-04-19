@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
 // socket
-
+var checkNodeVersion = require('./checkNodeVersion');
+checkNodeVersion();
 var sudo = require('./process/sudo');
 var tools = require('./tools');
 var log = require('./log');
 var promise = require('promise');
 var connectMsg = require('./process/connectMsgServer');
 var path = require('path');
+
 connectMsg()
 .then(function (result) {
 	var server = result.server;
