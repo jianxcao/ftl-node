@@ -102,20 +102,27 @@ function main(command, options) {
 	}
 	options = options || {};
 	var platform = process.platform;
-	if (platform === 'win32') {
-		return Promise.resolve(exec(command, options));
-	} else if (platform === 'linux' || platform === 'darwin') {
-		connectMsg()
-		// 取到通讯用得服务
-		.then(function (result) {
+	connectMsg()
+	// 取到通讯用得服务
+	.then(function (result) {
+		if (platform === 'win32') {
+			var child = exec(command, options);
+			process.stdin.pipe(child.stdin);
+			child.stdout.pipe(process.stdout);
+			child.stderr.pipe(process.stderr);
+			child.once('exit', function (s) {
+				process.exit(s);
+			});
+			return Promise.resolve(child);
+		} else if (platform === 'linux' || platform === 'darwin') {
 			var connectMsgServer = result.server;
 			return start(command, options, result.server, result.port);
-		});
-	} else {
-		console.error('不支持的操作系统');
-		process.exit(1);
-		return Promise.reject();
-	}
+		} else {
+			console.error('不支持的操作系统');
+			process.exit(1);
+			return Promise.reject();
+		}
+	});
 }
 
 // 尝试用sudo权限启动
@@ -142,12 +149,11 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 				if (++prompts > 1) {
 					cachedPassword = null;
 				}
-				// if (cachedPassword) {
-				// 	stdin.write(cachedPassword + '\n');
-				// } else {
-					
-				// }
-				isRead = true;
+				if (cachedPassword) {
+					stdin.write(cachedPassword + '\n');
+				} else {
+					isRead = true;
+				}
 			} else {
 				result += cur + '\n';
 			}
@@ -182,10 +188,6 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 	stderr
 	.pipe(stderrStream)
 	.pipe(process.stderr);
-	child.once('SIGINT', function () {
-		console.log('sigint111');
-		process.exit(0);
-	});
 
 	// 数据直接输出到主进程
 	stdout.pipe(process.stdout);

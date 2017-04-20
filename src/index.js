@@ -125,6 +125,10 @@ module.exports = function app() {
 		program: program
 	};
 	var cert = catProxy.cert;
+	var connectMsgPort = +program.connectMsgPort;
+	if (connectMsgPort) {
+		process.env.connectMsgPort = connectMsgPort;
+	}
 	// 生成证书
 	if (program.cert) {
 		if (cert.isRootCertExits()) {

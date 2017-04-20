@@ -10,8 +10,7 @@ var lis = function (server) {
 		var succ =  function () {
 			resolve();
 		};
-		var fail = function () {
-			console.log('fail');		
+		var fail = function () {	
 			reject();
 		};
 		server.once('error', fail);
@@ -27,7 +26,7 @@ app()
 	var program = result.program;
 	var connectMsgPort = +program.connectMsgPort;
 	var send = function (status, callback) {
-		callback = callback || tools.loop;
+		callback = callback || tools.noop;
 		var t = typeof status;
 		var result = {
 			action: 'start',

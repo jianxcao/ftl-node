@@ -1,48 +1,114 @@
-var cp = require('child_process');
-// var spawn = cp.spawn;
-var exec = cp.exec;
 var log = require('../src/log');
 var psTree = require('ps-tree');
-var cmd;
+var dgram = require('dgram');
 var iconv = require('iconv-lite');
+var tools = require('./tools');
+var clientSocket = dgram.createSocket('udp4');
+var Promise = require('promise');
+var cp = require('child_process');
+var cmd;
 var isWin = /^win/.test(process.platform);
 
-var noop =  function() {};
+clientSocket.on('error', function(err){
+	log.error('通讯进程出错');
+	log.error(err);
+	process.exit(1);
+});
+
+// 每次执行的唯id
+var uid = (function () {
+	var start = 1;
+	return function () {
+		return start ++;
+	};
+})();
+
+var getPort = (function () {
+	var port;
+	var res = tools.getPort()
+	.then(function (port) {
+		return port;
+	}, function (err) {
+		log.error(err);
+		process.exit(1);
+	});
+	return function() {
+		if (!port) {
+			return res;
+		} else {
+			return Promise.resolve(port);
+		}		
+	};
+})();
+/**
+ * 发送msg 格式
+ * 	{
+ *		type: 'server',
+ *		action: 'exec',
+ *		uid: this.uid
+ * 		//启动命令时候的命令
+ * 		command: command,
+ *     // 启动命令时候的opt
+ *		commandOpt: commandOpt,
+ *	};
+ *
+ * 回应msg格式
+ * {
+ *		type: 'server',
+ *		action: 'exec',
+ *		uid: this.uid,
+ *		pid: 进程id,
+ * 		status: 100 表示成功  -101 表示退出 99 错误输出流 98正确输出流
+ * 		输出流
+ * 		stream: null
+ *	};
+ * 
+ */
+
+/**
+ * 发送一个命令
+ * @param {*} command 
+ * @param {*} commandOpt 
+ * @param {*} callback 
+ */
+var send = function () {
+	var com = this;
+	getPort()
+	.then(function (port) {
+		var restult = {
+			type: 'server',
+			action: 'exec',
+			command: com.command,
+			commandOpt: com.commandOpt,
+			uid: com.uid,
+			port: port
+		};
+		var msg = JSON.stringify(restult);
+		clientSocket.send(msg, 0, msg.length, com.connectMsgPort, 'localhost');
+	});
+};
+
 // 执行一个命令
 var execOrder = function(fun) {
 	var com = this;
 	if (this.runing) {
 		return;
 	}
-	fun = fun || noop;
-	this.commandOpt.encoding = "GBK";
+	this.runing = true;
+	fun = fun || tools.noop;
 	log.info("准备运行命令:" + this.command);
-	cmd = exec(this.command, this.commandOpt);
-	// 进程意外退出或者进程被杀掉，重置状态
-	cmd.once("exit", function() {
-		cmd = null;
-		com.runing = false;
-		com.notifiy("info", "系统停止了"+ com.command + "命令的运行");
+	this.send(this.command, this.commandOpt);
+	clientSocket.once('startSuccess', function () {
+		fun(true);
 	});
-	// 把流给主进程
-	cmd.stdout.pipe(process.stdout);
-	cmd.stderr.pipe(process.stderr);
-	cmd.stdout.on('data', function(chunk) {
-		com.notifiy("info", "", chunk.toString());
-	});
-	cmd.stderr.on('data', function(chunk) {
-		com.notifiy("err", "", chunk.toString());
-	});
-	com.cmd = cmd;
-	com.runing = true;
-	fun(true);
 };
+
 var exit = function(fun) {
-	if (!this.runing) {
+	if (!this.runing || !this.pid) {
 		return;
 	}
-	fun = fun || noop;
-	var pid = this.cmd.pid;
+	fun = fun || tools.noop;
+	var pid = this.pid;
 	var com = this;
 	var signal = 'SIGKILL';
 	log.info("准备停止命令:" + this.command);
@@ -86,17 +152,55 @@ var exit = function(fun) {
 				fun(true);
 			}
 		});
-	}
+	}	
 };
+
 function MyCommand(opt) {
+	var connectMsgPort = process.env.connectMsgPort;
+	opt = opt || {};
+	if (!opt.notifiyServer) {
+		throw new Error('服务必须存在');
+	}
+	if (!connectMsgPort) {
+		throw new Error('通讯进程出错');
+	}
+	var com = this;
 	this.groupName = opt.groupName;
 	this.branchName = opt.branchName;
 	this.command = opt.command;
 	this.commandOpt = opt.commandOpt || {};
 	this.notifiyServer = opt.notifiyServer;
+	this.connectMsgPort = connectMsgPort;
+	this.send = send;
+	this.uid = uid();
+	getPort()
+	.then(function (port) {
+		clientSocket.bind(port);
+	});
+	clientSocket.on('message', function (msg) {
+		var msg = tools.parseMsg(msg);
+		if (msg && msg.type === 'server' && msg.action === 'exec' && msg.uid === com.uid && msg.pid) {
+			// 服务器进程启动成功了
+			if (msg.status === 100) {
+				com.notifiy("info", "系统运行命令:" + com.command);
+				com.pid = msg.pid;
+				clientSocket.emit('startSuccess');
+			} else if (msg.status === 99) {
+				com.notifiy("err", "", Buffer.from(msg.stream || "", 'hex').toString());
+			} else if (msg.status === 98) {
+				com.notifiy("info", "", Buffer.from(msg.stream || "", 'hex').toString());
+			} else if (msg.status === -101) {
+				com.runing = false;
+				// 进程退出
+				com.notifiy("info", "系统停止了"+ com.command + "命令的运行");
+				clientSocket.emit('closeSuccess');
+			}
+		}
+	});
 }
 MyCommand.prototype.exec = execOrder;
 MyCommand.prototype.exit = exit;
+
 MyCommand.prototype.notifiy = function(type, title, message) {
 	var groupName = this.groupName,
 		branchName = this.branchName;

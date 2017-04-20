@@ -70,7 +70,7 @@ exports.getPort = function(){
 	});
 };
 
-exports.loop = function () {};
+exports.noop = function () {};
 
 exports.parseMsg = function (msg) {
 	if (!msg) {
@@ -79,7 +79,7 @@ exports.parseMsg = function (msg) {
 	msg = msg.toString();
 	try {
 		msg = JSON.parse(msg);
-		if (!msg.type || !msg.action || !msg.status) {
+		if (!msg.type || !msg.action) {
 			log.error('消息内容有问题');
 			return {};
 		} else {
