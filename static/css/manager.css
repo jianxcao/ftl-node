@@ -158,7 +158,7 @@ header{
 }
 
 #listDir + label:after {
-	content: '开启代理';	
+	content: '开启代理';	
 	position: absolute;
 	width: 100%;
     height: 100%;

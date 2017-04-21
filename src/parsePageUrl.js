@@ -10,6 +10,7 @@ var log = require('./log');
 var fs = require('fs');
 var tools = require('./tools');
 var config = require('./config');
+var ip = require('ip');
 exports = module.exports = function parsePageUrl() {
 	return function(req, res, next) {
 		var isSecure = req.connection.encrypted || req.connection.pai,
@@ -25,10 +26,9 @@ exports = module.exports = function parsePageUrl() {
 		var cfg = config.get();
 		var serverPort = !!isSecure ? cfg.httpsPort : cfg.port;
 		var currentIp = hostname === 'localhost' ? "127.0.0.1" : hostname;
+		req.isIp = ip.isV4Format(currentIp) || ip.isV6Format(currentIp);
 		// hostname不一定是ip，如果不是ip就放过
-		var isLocalIp = tools.localIps.some(function(ip) {
-			return currentIp === ip;
-		});
+		var isLocalIp = req.isIp && ip.isPrivate(currentIp);
 		// 是否是本地ip
 		req.isLocalIp = isLocalIp;
 		// 当前服务器端口

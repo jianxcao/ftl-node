@@ -116,11 +116,12 @@ var createAutoProxy = function() {
 	// 没有出错的情况下
 	proxy
 	.use(parsePageUrl())
+	// 找到本地地址
 	.use(function(req, res, next) {
 		// 这里的err指得时parsePath失败
 		var isLocalIp = req.isLocalIp;
-		var serverPort = req.serverPort;
-		var port = req.port;
+		var serverPort = +req.serverPort;
+		var port = +req.port;
 		// 不可以访问目录
 		if (config.get('autoProxy') && ((req.pathObject.isDirectory && !isLocalIp) || (isLocalIp && port !== serverPort))) {
 			next();
@@ -128,14 +129,15 @@ var createAutoProxy = function() {
 			app(req, res);
 		}
 	})
+	// 没找到本地地址
 	.use(function(err, req, res, next) {
 		// 这里的err指得时parsePath失败
 		var	urlObject = url.parse(req.url),
 			pathname = urlObject.pathname,	
 			extname = path.extname(pathname);
 		var isLocalIp = req.isLocalIp;
-		var serverPort = req.serverPort;
-		var port = req.port;
+		var serverPort = +req.serverPort;
+		var port = +req.port;
 		// 本机静态资源
 		if (isServerStatic.test(pathname) || !config.get('autoProxy')) {
 			return app(req, res);
