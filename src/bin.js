@@ -68,8 +68,8 @@ function runCmd (msg, server) {
 		});
 	});
 	//  把流给主进程
-	// child.stdout.pipe(process.stdout);
-	// child.stderr.pipe(process.stderr);
+	child.stdout.pipe(process.stdout);
+	child.stderr.pipe(process.stderr);
 	child.stdout.on('data', function(chunk) {
 		var str = chunk.toString('hex');
 		send({
