@@ -10,6 +10,7 @@
 ```javascript
 var config = {
 	start: 'npm run start',
+	// freemarker jar包得版本，这个版本号码程序中内置的版本号码，也可以是一个 绝对路径的jar包
 	jarVersion: '2.3.23',
 	routes: [{
 		test: /(.*)\.\w{10}\.([^\.]+)$/,
