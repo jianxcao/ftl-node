@@ -1,0 +1,20 @@
+{
+  "gitbook": "3.2.2",
+  "title": "ftl-node",
+  "author": "jianxcao",
+  "language" : "zh-hans",
+  "plugins": ["edit-link", "prism", "-highlight", "github", "-search", "search-pro",  "splitter"],
+  "pluginsConfig": {
+    "search-pro": {
+        "cutWordLib": "nodejieba",
+        "defineWord" : ["Gitbook Use"]
+    },     
+    "edit-link": {
+      "base": "https://github.com/jianxcao/ftl-node/tree/master",
+      "label": "Edit This Page"
+    },
+    "github": {
+      "url": "https://github.com/jianxcao/ftl-node"
+    }
+  }
+}
