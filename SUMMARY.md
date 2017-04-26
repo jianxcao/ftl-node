@@ -1,4 +1,2 @@
-# Summary
-
-* [说明](README.md)
+docs/README.md
 
