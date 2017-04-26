@@ -17,28 +17,26 @@ ftl-node 是一个通过界面可配置的 前静态资源其中实现了，可�
 9. 可以通过简单配置在页面中嵌入 werinre
 10. 可以禁止页缓存
 
-
-## 使用方法
-### 安装
+## 安装
 ```
 npm install ftl-node  -g 
 ```
-### 使用
+## 使用
 
 输入命令 `ftl-node`, 浏览器端会打开一个界面,通过界面配置即可
 
 输入命令 `ftl-node -p 8080` 可指定端口打开页面,端口会记住，下次打开会默认上次的端口
 
-### 帮助
+## 帮助
 `ftl-node -h`
 
-### [ui界面配置说明](static/help.md)
+## [ui界面配置说明](static/help.md)
 
-### [假数据配置说明](static/mock.md)
+## [假数据配置说明](static/mock.md)
 
-### [代理服务器说明](static/proxy.md)
+## [代理服务器说明](static/proxy.md)
 
-####  支持request调用的方法
+## 支持request调用的方法
 ```
 ${request.getRequestURI()}
 ${request.getRequestURL()}
@@ -60,10 +58,9 @@ ${request.getScheme()}
 2. 环境依赖java的jdk或者jre
 3. 配置将记录于系统缓存文件中，请确保运行时有对系统缓存目录修改的权限,并注意如果缓存目录清除，将会删除配置文件
 4. freemarker.jar文件在目录下地jar目录下，可以自己做配置，改变freemarker的版本，具体请看[假数据配置说明](static/mock.md)
-## 其他
 
+## 其他
 1. [更新日志](./updateInfo.md)
 
 ## License
-
 MIT
