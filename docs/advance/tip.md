@@ -6,7 +6,8 @@
 5. mac下会记用户的sudo密码,记录在临时文件中
 
 > 支持request调用的方法
-``` freemarker
+
+```
 ${request.getRequestURI()}
 ${request.getRequestURL()}
 ${request.getCookies()}

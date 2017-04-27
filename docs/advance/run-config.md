@@ -5,11 +5,11 @@
 
 ## run.config.js主要功能有
 
-1. [ftl假数据配置](run-config/ftl-mock.md)
-2. [freemarker版本的配置](run-config/ftl-version.md)
-3. [简单路由转发配置](run-config/routes.md)
-4. [ajax假数据配置](run-config/ajax-mock.md)
-5. [命令调用](run-config/cmd.md)
+- [命令调用](run-config/cmd.md)
+- [ftl假数据配置](run-config/ftl-mock.md)
+- [ftl版本的配置](run-config/ftl-version.md)
+- [简单路由转发配置](run-config/routes.md)
+- [ajax假数据配置](run-config/ajax-mock.md)
 
 ## 举例说明
 
