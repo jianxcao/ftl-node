@@ -9,9 +9,9 @@
   * [服务器类型](docs/advance/serverType.md)
   * [日志级别修改](docs/advance/log.md)
   * [run.config.js 配置文件](docs/advance/runconfigjs.md)
-  * [代理服务器使用](advance/proxy.md)
-  * [界面配置相关](advance/ui.md)
-
+  * [代理服务器使用](docs/advance/proxy.md)
+  * [界面配置相关](docs/advance/ui.md)
+* [重要提示](docs/advance/tip.md)
 * [更新日志](docs/updateInfo.md)
 
 
