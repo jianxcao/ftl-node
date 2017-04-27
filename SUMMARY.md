@@ -4,9 +4,9 @@
 * [安装](docs/install.md)
 * [基础用法](docs/base.md)
 * [高级用法](docs/advance.md)
-    - 服务器端口
-    - ui界面控制
-    - 服务器类型
+    - [服务器端口](advance/port.md)
+    - [ui界面端口](advance/uiPort.md)
+    - [服务器类型](advance/serverType.md)
     - 自动打开界面
     - 日志级别修改
     - run.config.js 配置文件

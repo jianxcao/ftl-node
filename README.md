@@ -18,7 +18,7 @@ ftl-node 是一个通过界面可配置的 前静态资源其中实现了，可�
 10. 可以禁止页缓存
 
 ## 更新
-1. [更新日志](./updateInfo.md)
+1. [更新日志](docs/updateInfo.md)
 
 ## License
 MIT
