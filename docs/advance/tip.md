@@ -3,3 +3,22 @@
 2. 环境依赖java的jdk或者jre
 3. 配置文件将记录于系统缓存文件中，请确保运行时有对系统缓存目录修改的权限,并注意如果缓存目录清除，将会删除配置文件
 4. freemarker.jar文件在目录下地jar目录下，可以自己做配置，改变freemarker的版本，具体请看[假数据配置说明](mock.md)
+5. mac下会记用户的sudo密码,记录在临时文件中
+
+> 支持request调用的方法
+``` freemarker
+${request.getRequestURI()}
+${request.getRequestURL()}
+${request.getCookies()}
+${request.getHeaderNames()}
+${request.getHeader(String headerName)}
+${request.getQueryString()}
+${request.getParameter()}
+${request.getParameterMap()}
+${request.getParameterNames(String parName)}
+${request.getServerName()}
+${request.getServerPort()}
+${request.getProtocol()}
+${request.getScheme()}
+
+```
