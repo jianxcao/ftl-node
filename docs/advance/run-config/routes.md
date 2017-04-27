@@ -1,9 +1,9 @@
 # 简单路由配置
 
-通过run.config.js中root节点下地 routes控制简单路由
+通过run.config.js中root节点下的routes控制简单路由
 
 如 
-``` javasrcipt
+``` javascript
 {
     // 接受一个数组作为每一项表示一个配配置
     // 每个配置有test正则取匹配访问的url
