@@ -4,7 +4,7 @@
   "author": "jianxcao",
   "language" : "zh-hans",
   "plugins": ["edit-link", "prism", "-highlight", "github", "-search", "search-pro",  "splitter"],
-  "summary": "docs/readme.md",
+  "summary": "docs/README.md",
   "pluginsConfig": {
     "search-pro": {
         "cutWordLib": "nodejieba",
