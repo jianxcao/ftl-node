@@ -5,7 +5,6 @@
 npm install ftl-node  -g 
 
 # 帮助命令
-
 ftl-node -h
 
 ```
