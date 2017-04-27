@@ -8,8 +8,11 @@
 
 # 修改jar包得方式
 run.config.js  root下添加 jarVersion
-如果添加版本号码只能添加系统内置的几个版本。有**2.3.18,2.3.23,2.3.25**
-可以写jar包的绝对路径，实现自定义jar包
+
+添加指定版本 如 **2.3.18,2.3.23,2.3.25**
+
+添加jar包路径  如: ** '/usr/test/test.jar'**
+
 ``` json
 {
     jarVersion: 2.3.25|'/usr/test/test.jar'

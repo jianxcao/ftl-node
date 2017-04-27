@@ -1,0 +1,4 @@
+#忽略源码目录
+./src
+web/src
+./_book

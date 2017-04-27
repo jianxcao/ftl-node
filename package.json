@@ -32,7 +32,8 @@
     "ftl-node": "src/bin.js"
   },
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "doc": "gitbook serve"
   },
   "keywords": [
     "node",

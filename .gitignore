@@ -5,3 +5,4 @@ lib/jar/freemarker.jar
 npm-debug.log
 .vscode
 fileCache
+/_book
