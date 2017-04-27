@@ -4,7 +4,7 @@
 * [安装](docs/install.md)
 * [基础用法](docs/base.md)
 * [高级用法](docs/advance.md)
-  * \[服务器端口\]\(./serverType.md\)
+  * [服务器类型](/advance/serverType.md "服务器类型")
   * [ui界面端口](advance/uiPort.md)
   * [服务器类型](advance/serverType.md)
   * [自动打开界面](advance/zi-dong-da-kai-jie-mian.md)
