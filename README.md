@@ -20,5 +20,7 @@ ftl-node 是一个通过界面可配置的前静态资源服务器。其可对�
 ## 更新
 1. [更新日志](docs/updateInfo.md)
 
+## [文档地址](https://jianxcao.gitbooks.io/ftl-node/content/)
+
 ## License
 MIT
