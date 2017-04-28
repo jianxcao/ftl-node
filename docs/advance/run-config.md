@@ -1,6 +1,6 @@
 # run.config.js配置
 
-每个项目的根目录下应该有一个 run.config.js用于配置该项目
+每个项目的根目录下可以有个run.config.js用于配置该项目
 
 
 ## run.config.js主要功能有
@@ -10,8 +10,8 @@
 - [ftl版本的配置](run-config/ftl-version.md)
 - [简单路由转发配置](run-config/routes.md)
 - [ajax假数据配置](run-config/ajax-mock.md)
-
-## 举例说明
+- [设置是否转义ftl输出变量](run-config/escape.md)
+## 完整配置文件
 
 ```javascript
 var config = {

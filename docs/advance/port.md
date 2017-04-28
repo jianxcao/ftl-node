@@ -9,3 +9,5 @@
     # 如果同时开https服务器，可以用逗号分隔，一个表示http端口，一个表示https端口
     ftl-node -p 8080,8081
 ```
+
+[服务器类型修改](./serverType.md)

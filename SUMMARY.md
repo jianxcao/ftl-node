@@ -14,6 +14,7 @@
     - [freemarker版本的配置](docs/advance/run-config/ftl-version.md)
     - [简单路由转发配置](docs/advance/run-config/routes.md)
     - [ajax假数据配置](docs/advance/run-config/ajax-mock.md)
+    - [设置是否转义ftl输出变量](docs/advance/run-config/escape.md)
   * [代理服务器使用](docs/advance/proxy.md)
   * [界面配置相关](docs/advance/ui.md)
 * [重要提示](docs/advance/tip.md)
