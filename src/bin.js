@@ -11,15 +11,18 @@ var connectMsg = require('./process/connectMsgServer');
 var path = require('path');
 var merge = require('merge');
 var childProcess = require('child_process');
+// 启动服务端的服务器
 connectMsg()
 .then(function (result) {
 	var server = result.server;
+	// 将收到的 编译消息，或者sudo的消息格式化成想要的结果在触发一个msg事件
 	server.on('message', function (msg) {
 		msg = tools.parseMsg(msg);
 		if (msg.type) {
 			server.emit('msg', msg);
 		}
 	});
+	// 处理跑命令
 	command(server);
 	// 启动子进程
 	var child = function () {
@@ -43,6 +46,7 @@ function runCmd (msg, server) {
 	var opt = merge({}, msg.commandOpt, {
 		encoding: 'buffer'
 	});
+	// 以子进程跑消息服务
 	var child = childProcess.exec(msg.command, opt);
 	var port = msg.port;
 	var result = {
@@ -52,6 +56,7 @@ function runCmd (msg, server) {
 		pid: child.pid,
 		status: 100
 	};
+	// 将消息回复到调用者那里
 	var send = function (current) {
 		var res = merge({}, result, current);
 		res = JSON.stringify(res);
@@ -67,7 +72,7 @@ function runCmd (msg, server) {
 			});
 		});
 	});
-	//  把流给主进程
+	//  把流给主进程,显示在控制台
 	child.stdout.pipe(process.stdout);
 	child.stderr.pipe(process.stderr);
 	child.stdout.on('data', function(chunk) {
@@ -92,7 +97,7 @@ function runCmd (msg, server) {
  * 	{
  *		type: 'server',
  *		action: 'exec',
- *		uid: this.uid
+ *		uid: this.uid  //唯一id
  * 		//启动命令时候的命令
  * 		command: command,
  *     // 启动命令时候的opt
@@ -109,7 +114,10 @@ function runCmd (msg, server) {
  * 		输出流
  * 		stream: null
  *	};
- * 
+ *  action exec 表示执行一个子进程的命令
+ *  action start 表示服务器启动
+ *  action cert 表示需要生成证书
+ *  status: 100 表示成功  -101 表示退出 99 错误输出流 98正确输出流
  */
 function command (server) {
 	server.on('msg', function (msg) {

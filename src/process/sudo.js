@@ -4,6 +4,7 @@ var spawn = require('child_process').spawn;
 var inpathSync = require('inpath').sync;
 var path = process.env['PATH'].split(':');
 var sudoBin = inpathSync('sudo', path);
+// 启动或者拿到消息服务器
 var connectMsg = require('./connectMsgServer');
 var tools = require('../tools');
 var log = require('../log');
@@ -23,6 +24,7 @@ var cachedPassword = fs.readFileSync(passwordPath).toString();
 var lastAnswer;
 // 先尝试用普通权限执行
 function exec (command, options, connectMsgPort) {
+	// 并将这个内置参数传递给子进程
 	command.push('--connectMsgPort', connectMsgPort);
 	return spawn(command[0], command.slice(1), options.spawnOptions);
 };
@@ -105,8 +107,9 @@ function main(command, options) {
 	connectMsg()
 	// 取到通讯用得服务
 	.then(function (result) {
+		var connectMsgServer = result.server;
 		if (platform === 'win32') {
-			var child = exec(command, options);
+			var child = exec(command, options, result.port);
 			process.stdin.pipe(child.stdin);
 			child.stdout.pipe(process.stdout);
 			child.stderr.pipe(process.stderr);
@@ -115,7 +118,7 @@ function main(command, options) {
 			});
 			return Promise.resolve(child);
 		} else if (platform === 'linux' || platform === 'darwin') {
-			var connectMsgServer = result.server;
+			
 			return start(command, options, result.server, result.port);
 		} else {
 			console.error('不支持的操作系统');

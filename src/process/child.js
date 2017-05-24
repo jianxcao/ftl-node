@@ -56,11 +56,11 @@ app()
 			return;
 		}
 		if (program.cert) {
-			resolve();
 			send({
 				status: 100,
 				action: 'cert'
 			});
+			return resolve();
 		}
 		var servers = proxy.servers;
 		var uiServer = proxy.ui.uiServer;		
