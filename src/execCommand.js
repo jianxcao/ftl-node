@@ -186,9 +186,9 @@ function MyCommand(opt) {
 				com.pid = msg.pid;
 				clientSocket.emit('startSuccess');
 			} else if (msg.status === 99) {
-				com.notifiy("err", "", Buffer.from(msg.stream || "", 'hex').toString());
+				com.notifiy("err", "", new Buffer(msg.stream || "", 'hex').toString());
 			} else if (msg.status === 98) {
-				com.notifiy("info", "", Buffer.from(msg.stream || "", 'hex').toString());
+				com.notifiy("info", "", new Buffer(msg.stream || "", 'hex').toString());
 			} else if (msg.status === -101) {
 				com.runing = false;
 				// 进程退出
