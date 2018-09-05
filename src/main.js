@@ -119,7 +119,6 @@ var createAutoProxy = function() {
 	.use(parsePageUrl())
 	// 找到本地地址
 	.use(function(req, res, next) {
-		console.log('aaaaaaaa');
 		// 这里的err指得时parsePath失败
 		var isLocalIp = req.isLocalIp;
 		var serverPort = +req.serverPort;
