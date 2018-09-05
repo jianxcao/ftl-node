@@ -44,15 +44,21 @@ exports = module.exports = function parsePageUrl() {
 		parsePath(fullUrl)
 		.then(function(pathObject) {
 			var absPath = pathObject.fullPath;
-			fs.lstat(absPath, function(err, status) {
-				if (err) {
-					return next(err);
-				}
-				pathObject.isDirectory = status.isDirectory();
-				pathObject.ext = path.extname(pathObject.path).slice(1);
+			pathObject.ext = path.extname(pathObject.path).slice(1);
+			// 已经有内容
+			if (pathObject.content) {
 				req.pathObject = pathObject;
 				next();
-			});
+			} else {
+				fs.lstat(absPath, function(err, status) {
+					if (err) {
+						return next(err);
+					}
+					pathObject.isDirectory = status.isDirectory();
+					req.pathObject = pathObject;
+					next();
+				});
+			}
 		}, function(err) {
 			next(err);
 		});

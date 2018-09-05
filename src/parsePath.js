@@ -10,7 +10,7 @@ var querystring = require('querystring');
 var Promise = require('promise');
 var getProjectConfig = require('../src/getProjectConfig');
 var URL = require('url');
-var parsePath, parseOneGroup, parseBranch, parseOneBranch, redirectUrl, execParse, redirectOneUrl;
+var parsePath, parseOneGroup, parseBranch, parseOneBranch, redirectUrl, execParse, redirectOneUrl, contentOneUrl;
 
 /**
  * 根据配置文件和当前路径解析出一个合理的文件路径，解析成功则返回文件路径
@@ -110,6 +110,12 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 		exists;
 	return redirectUrl(originalUrl, groupName, branchName)
 	.then(function(url) {
+		var content;
+		// 直接由用户设置了内容
+		if (url && url.url && url.content) {
+			content = url.content;
+			url = url.url;
+		}
 		changePathname = URL.parse(url).pathname;
 		// 如果codePath为空默认为当前子路径
 		codePath = current.codePath || "";
@@ -132,6 +138,23 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 			}
 		} else {
 			p = path.join(codePath, changePathname);
+		}
+
+		if (content) {
+			return {
+				fullPath: '',
+				// 用户设置的基础路径
+				userBasePath: basePath,
+				// 当前ftl文件的基础路径
+				basePath: codePath,
+				// ftl相对路径
+				path: changePathname,
+				groupName: groupName,
+				branchName: branchName,
+				originalUrl: originalUrl,
+				url: url,
+				content
+			}
 		}
 		if (p) {
 			exists = fs.existsSync(p);
@@ -161,7 +184,7 @@ redirectUrl = function(url, groupName, branchName) {
 	if (commandConfig && commandConfig.routes && commandConfig.routes.length) {
 		for(var i = 0, l = commandConfig.routes.length; i < l; i++) {
 			tmp = commandConfig.routes[i];
-			if (tmp && tmp.test && tmp.redirect) {
+			if (tmp && tmp.test && (tmp.redirect || typeof tmp.content === 'function')) {
 				type = typeof tmp.test;
 				if (type === "string") {
 					reg = new RegExp(type);
@@ -169,10 +192,17 @@ redirectUrl = function(url, groupName, branchName) {
 					reg =  tmp.test;
 				}
 				if (reg && reg.test(url)) {
-					funs.push({
-						fun: redirectOneUrl,
-						param: [url, reg, tmp.redirect]
-					});
+					if (tmp.redirect) {
+						funs.push({
+							fun: redirectOneUrl,
+							param: [url, reg, tmp.redirect]
+						});
+					} else {
+						funs.push({
+							fun: contentOneUrl,
+							param: [url, reg, tmp.content]
+						});
+					}
 				}
 			}
 		}
@@ -211,6 +241,11 @@ redirectOneUrl = function(url, reg, redirect) {
 	}
 	return url;
 
+};
+
+// 这里返回的可能不是一个url，而是一个object，如果是一个obj必须有 url字段和content字段
+contentOneUrl = function (url, reg, content) {
+	return content(url);
 };
 /**
  * 按tasks的顺序执行promise
