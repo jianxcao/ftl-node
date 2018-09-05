@@ -136,3 +136,6 @@
 
 ## V2.2.13 (2017年05月26日)
 1. Buffer.from改成new Buffer
+
+## V2.3.0 (2018年09月05日)
+1. run.config.js中的routers增加 content配置，可以直接根据url返回文件内容
