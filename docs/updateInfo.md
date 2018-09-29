@@ -139,3 +139,6 @@
 
 ## V2.3.0 (2018年09月05日)
 1. run.config.js中的routers增加 content配置，可以直接根据url返回文件内容
+
+## V2.3.2 (2018年09月29日)
+1. parsePath修改，对contentOneUrl方法，增加检查数据

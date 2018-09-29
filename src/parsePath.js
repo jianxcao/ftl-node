@@ -244,8 +244,10 @@ redirectOneUrl = function(url, reg, redirect) {
 };
 
 // 这里返回的可能不是一个url，而是一个object，如果是一个obj必须有 url字段和content字段
+// 如： { 'aaa' , '/test'}
 contentOneUrl = function (url, reg, content) {
-	return content(url);
+	const res = content(url) || {};
+	return res.url && res.content ?  res : url;
 };
 /**
  * 按tasks的顺序执行promise
