@@ -23,8 +23,9 @@ exports = module.exports = function serveStatic() {
 				if (content) {
 					var mimeType = ext ? mime.getType(pathObject.path) : 'text/html';
 					headers['content-type'] = mimeType;
-					res.set(headers);
-					return res.end(content);
+					res.writeHead(200, headers);
+					res.end(content);
+					return;
 				}
 				// 渲染文件
 				return res.sendFile(absPath, {

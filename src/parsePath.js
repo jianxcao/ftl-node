@@ -246,8 +246,17 @@ redirectOneUrl = function(url, reg, redirect) {
 // 这里返回的可能不是一个url，而是一个object，如果是一个obj必须有 url字段和content字段
 // 如： { 'aaa' , '/test'}
 contentOneUrl = function (url, reg, content) {
-	const res = content(url) || {};
-	return res.url && res.content ?  res : url;
+	try {
+		const res = content(url) || {};
+		// promise直接返回，但是结果必须是带url和content的字段否则会被忽略
+		if (res.then) {
+			return res;
+		}
+		return res.url && res.content ?  res : url;
+	} catch (err) {
+		log.error(err);
+	}
+	return url;
 };
 /**
  * 按tasks的顺序执行promise

@@ -142,3 +142,6 @@
 
 ## V2.3.2 (2018年09月29日)
 1. parsePath修改，对contentOneUrl方法，增加检查数据
+
+## V2.3.3 (2018年09月29日)
+1. parsePath contentOneUrl健壮性修改，增加可返回promise

@@ -1,6 +1,6 @@
 {
   "name": "ftl-node",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "ftl parse to html",
   "main": "app.js",
   "dependencies": {
@@ -24,7 +24,7 @@
     "ps-tree": "^1.0.0",
     "rcfinder": "^0.1.8",
     "read": "^1.0.7",
-    "request": "^2.72.0",
+    "request": "^2.88.0",
     "through2": "^2.0.3",
     "winston": "^2.2.0"
   },
@@ -33,7 +33,7 @@
     "ftl-node": "src/bin.js"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "node src/bin.js",
     "doc": "gitbook serve"
   },
   "keywords": [
@@ -53,6 +53,5 @@
   "engines": {
     "node": ">=4.0.0"
   },
-  "engineStrict": true,
-  "devDependencies": {}
+  "engineStrict": true
 }
