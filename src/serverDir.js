@@ -30,21 +30,21 @@ parseDir = function(res, req, next, absPath) {
 		});
 	})
 	// 第三部根据文件名循环遍历得到文件信息
-	.then(function(files) {
-		return getFileInfo(files, absPath);
+		.then(function(files) {
+			return getFileInfo(files, absPath);
 		// 第四部渲染页面
-	}).then(function(filesInfo) {
-		res.render("list", {
-			locationUrl: url.parse(req.url),
-			data: filesInfo
+		}).then(function(filesInfo) {
+			res.render("list", {
+				locationUrl: url.parse(req.url),
+				data: filesInfo
+			});
+		}).catch(function(e) { // 出错，直接抛出到页面
+			if (typeof(e) === "string") {
+				e = new Error(e);
+			}
+			log.error(e);
+			next(e);
 		});
-	}).catch(function(e) { // 出错，直接抛出到页面
-		if (typeof(e) === "string") {
-			e = new Error(e);
-		}
-		log.error(e);
-		next(e);
-	});
 };
 /*
  *  读取指定列表的所有文件的文件信息

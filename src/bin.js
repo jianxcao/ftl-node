@@ -13,33 +13,33 @@ var merge = require('merge');
 var childProcess = require('child_process');
 // 启动服务端的服务器
 connectMsg()
-.then(function (result) {
-	var server = result.server;
-	// 将收到的 编译消息，或者sudo的消息格式化成想要的结果在触发一个msg事件
-	server.on('message', function (msg) {
-		msg = tools.parseMsg(msg);
-		if (msg.type) {
-			server.emit('msg', msg);
-		}
-	});
-	// 处理跑命令
-	command(server);
-	// 启动子进程
-	var child = function () {
-		var options = {
-			cachePassword: true,
-			spawnOptions: {
-				stdio: ['pipe', 'pipe', 'pipe']
+	.then(function (result) {
+		var server = result.server;
+		// 将收到的 编译消息，或者sudo的消息格式化成想要的结果在触发一个msg事件
+		server.on('message', function (msg) {
+			msg = tools.parseMsg(msg);
+			if (msg.type) {
+				server.emit('msg', msg);
 			}
+		});
+		// 处理跑命令
+		command(server);
+		// 启动子进程
+		var child = function () {
+			var options = {
+				cachePassword: true,
+				spawnOptions: {
+					stdio: ['pipe', 'pipe', 'pipe']
+				}
+			};
+			// 通过不同系统判断采用不同权限启动一个进程
+			sudo(['node', path.join(__dirname, 'process/child.js')].concat(process.argv.slice(2)), options);
 		};
-		// 通过不同系统判断采用不同权限启动一个进程
-		sudo(['node', path.join(__dirname, 'process/child.js')].concat(process.argv.slice(2)), options);
-	};
 
-	child();
-	log.info('ftl-node主进程启动');
+		child();
+		log.info('ftl-node主进程启动');
 
-}, tools.error);
+	}, tools.error);
 
 function runCmd (msg, server) {
 	// 强制必须是buffer

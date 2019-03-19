@@ -42,25 +42,25 @@ exports = module.exports = function parsePageUrl() {
 		// 获取路径
 		pathname = path.normalize(pathname);
 		parsePath(fullUrl)
-		.then(function(pathObject) {
-			var absPath = pathObject.fullPath;
-			pathObject.ext = path.extname(pathObject.path).slice(1);
-			// 已经有内容
-			if (pathObject.content) {
-				req.pathObject = pathObject;
-				next();
-			} else {
-				fs.lstat(absPath, function(err, status) {
-					if (err) {
-						return next(err);
-					}
-					pathObject.isDirectory = status.isDirectory();
+			.then(function(pathObject) {
+				var absPath = pathObject.fullPath;
+				pathObject.ext = path.extname(pathObject.path).slice(1);
+				// 已经有内容
+				if (pathObject.content) {
 					req.pathObject = pathObject;
 					next();
-				});
-			}
-		}, function(err) {
-			next(err);
-		});
+				} else {
+					fs.lstat(absPath, function(err, status) {
+						if (err) {
+							return next(err);
+						}
+						pathObject.isDirectory = status.isDirectory();
+						req.pathObject = pathObject;
+						next();
+					});
+				}
+			}, function(err) {
+				next(err);
+			});
 	};
 };

@@ -43,7 +43,7 @@ getAjaxData = function(options) {
 			url: url,
 			headers: req.headers
 		})
-		.pipe(res);
+			.pipe(res);
 	}, function() {
 		res.send("");
 	});

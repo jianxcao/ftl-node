@@ -26,12 +26,12 @@ var uid = (function () {
 var getPort = (function () {
 	var port;
 	var res = tools.getPort()
-	.then(function (port) {
-		return port;
-	}, function (err) {
-		log.error(err);
-		process.exit(1);
-	});
+		.then(function (port) {
+			return port;
+		}, function (err) {
+			log.error(err);
+			process.exit(1);
+		});
 	return function() {
 		if (!port) {
 			return res;
@@ -74,18 +74,18 @@ var getPort = (function () {
 var send = function () {
 	var com = this;
 	getPort()
-	.then(function (port) {
-		var restult = {
-			type: 'server',
-			action: 'exec',
-			command: com.command,
-			commandOpt: com.commandOpt,
-			uid: com.uid,
-			port: port
-		};
-		var msg = JSON.stringify(restult);
-		clientSocket.send(msg, 0, msg.length, com.connectMsgPort, 'localhost');
-	});
+		.then(function (port) {
+			var restult = {
+				type: 'server',
+				action: 'exec',
+				command: com.command,
+				commandOpt: com.commandOpt,
+				uid: com.uid,
+				port: port
+			};
+			var msg = JSON.stringify(restult);
+			clientSocket.send(msg, 0, msg.length, com.connectMsgPort, 'localhost');
+		});
 };
 
 // 执行一个命令
@@ -174,9 +174,9 @@ function MyCommand(opt) {
 	this.send = send;
 	this.uid = uid();
 	getPort()
-	.then(function (port) {
-		clientSocket.bind(port);
-	});
+		.then(function (port) {
+			clientSocket.bind(port);
+		});
 	clientSocket.on('message', function (msg) {
 		var msg = tools.parseMsg(msg);
 		if (msg && msg.type === 'server' && msg.action === 'exec' && msg.uid === com.uid && msg.pid) {

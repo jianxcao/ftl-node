@@ -82,41 +82,41 @@ var getConfig = function() {
 	var cfg = {};
 	var booleanKeys = ['runCmd', 'autoOpen', 'autoProxy', 'breakHttps']; 
 	['type', 'port', 'uiPort', 'log', 'breakHttps', 'excludeHttps', 'autoOpen', 'sni', 'runCmd', 'autoProxy']
-	.forEach(function(current) {
-		if (program[current] === 'true') {
-			program[current] = true;
-		}
-		if (program[current] === 'false') {
-			program[current] = false;
-		}
-		var type = typeof program[current];
-		if (type === 'boolean') {
-			if (~booleanKeys.indexOf(current)) {
-				cfg[current] = program[current];
+		.forEach(function(current) {
+			if (program[current] === 'true') {
+				program[current] = true;
 			}
-		} else if (type === 'string') {
-			program[current] = program[current].toLowerCase();
-			if (program[current] === '') {
-				if (current === 'excludeHttps') {
-					cfg[current] = '';
-				}
-			} else {
-				if (current == 'breakHttps' || current === 'excludeHttps') {
-					cfg[current] = program[current].split(',');
-				} else {
+			if (program[current] === 'false') {
+				program[current] = false;
+			}
+			var type = typeof program[current];
+			if (type === 'boolean') {
+				if (~booleanKeys.indexOf(current)) {
 					cfg[current] = program[current];
 				}
+			} else if (type === 'string') {
+				program[current] = program[current].toLowerCase();
+				if (program[current] === '') {
+					if (current === 'excludeHttps') {
+						cfg[current] = '';
+					}
+				} else {
+					if (current == 'breakHttps' || current === 'excludeHttps') {
+						cfg[current] = program[current].split(',');
+					} else {
+						cfg[current] = program[current];
+					}
+				}
+			} else if (type === 'number') {
+				if (program[current] >= -1) {
+					cfg[current] = program[current];
+				}
+			} else if (type === 'object') {
+				if (current === 'port' &&  program.port.length) {
+					cfg.port = program.port;
+				}
 			}
-		} else if (type === 'number') {
-			if (program[current] >= -1) {
-				cfg[current] = program[current];
-			}
-		} else if (type === 'object') {
-			if (current === 'port' &&  program.port.length) {
-				cfg.port = program.port;
-			}
-		}
-	});
+		});
 	return cfg;
 };
 module.exports = function app() {
@@ -149,9 +149,9 @@ module.exports = function app() {
 			cfg.port = cfg.port[0];
 		}
 		return Promise.resolve(main(cfg))
-		.then(function (res) {
-			return merge(result, res);
-		});
+			.then(function (res) {
+				return merge(result, res);
+			});
 	}
 };
 

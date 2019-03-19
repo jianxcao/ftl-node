@@ -1,5 +1,5 @@
 exports.key = ['port', 'httpsPort', 'type', 'uiPort', 'autoProxy', 
-'logLevel', "runCmd", "autoOpen", "log", 'breakHttps', 'excludeHttps', 'sni'];
+	'logLevel', "runCmd", "autoOpen", "log", 'breakHttps', 'excludeHttps', 'sni'];
 exports.cfg = {
 	port: 80,
 	httpsPort: 443,

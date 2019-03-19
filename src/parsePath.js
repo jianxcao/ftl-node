@@ -109,59 +109,40 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 		changePathname,
 		exists;
 	return redirectUrl(originalUrl, groupName, branchName)
-	.then(function(url) {
-		var content;
-		// 直接由用户设置了内容
-		if (url && url.url && url.content) {
-			content = url.content;
-			url = url.url;
-		}
-		changePathname = URL.parse(url).pathname;
-		// 如果codePath为空默认为当前子路径
-		codePath = current.codePath || "";
-		// 将基础路径和 代码路径合并
-		codePath = path.resolve(basePath, codePath);
-		// 虚拟路径处理
-		if (current.virtualPath) {
-			v = path.normalize("/" + current.virtualPath);
-			changePathname = path.normalize(changePathname);
-			v = v.replace(/[\*\.\?\+\$\^\[\]\(\)\{\}\|\\\/]/g, function(cur) {
-				return "\\" + cur;
-			});
-			tmp = ["^", v].join('');
-			// 创建正则
-			reg = new RegExp(tmp);
-			// // 符合路经规则--去掉虚拟路径
-			if (reg.test(changePathname)) {
-				changePathname = changePathname.replace(reg, "");
+		.then(function(url) {
+			var content;
+			// 直接由用户设置了内容
+			if (url && url.url && url.content) {
+				content = url.content;
+				url = url.url;
+			}
+			changePathname = URL.parse(url).pathname;
+			// 如果codePath为空默认为当前子路径
+			codePath = current.codePath || "";
+			// 将基础路径和 代码路径合并
+			codePath = path.resolve(basePath, codePath);
+			// 虚拟路径处理
+			if (current.virtualPath) {
+				v = path.normalize("/" + current.virtualPath);
+				changePathname = path.normalize(changePathname);
+				v = v.replace(/[\*\.\?\+\$\^\[\]\(\)\{\}\|\\\/]/g, function(cur) {
+					return "\\" + cur;
+				});
+				tmp = ["^", v].join('');
+				// 创建正则
+				reg = new RegExp(tmp);
+				// // 符合路经规则--去掉虚拟路径
+				if (reg.test(changePathname)) {
+					changePathname = changePathname.replace(reg, "");
+					p = path.join(codePath, changePathname);
+				}
+			} else {
 				p = path.join(codePath, changePathname);
 			}
-		} else {
-			p = path.join(codePath, changePathname);
-		}
 
-		if (content) {
-			return {
-				fullPath: '',
-				// 用户设置的基础路径
-				userBasePath: basePath,
-				// 当前ftl文件的基础路径
-				basePath: codePath,
-				// ftl相对路径
-				path: changePathname,
-				groupName: groupName,
-				branchName: branchName,
-				originalUrl: originalUrl,
-				url: url,
-				content
-			}
-		}
-		if (p) {
-			exists = fs.existsSync(p);
-			if (exists) {
+			if (content) {
 				return {
-					// ftl全路径
-					fullPath: p,
+					fullPath: '',
 					// 用户设置的基础路径
 					userBasePath: basePath,
 					// 当前ftl文件的基础路径
@@ -171,11 +152,30 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 					groupName: groupName,
 					branchName: branchName,
 					originalUrl: originalUrl,
-					url: url
+					url: url,
+					content
 				};
 			}
-		}
-	});
+			if (p) {
+				exists = fs.existsSync(p);
+				if (exists) {
+					return {
+					// ftl全路径
+						fullPath: p,
+						// 用户设置的基础路径
+						userBasePath: basePath,
+						// 当前ftl文件的基础路径
+						basePath: codePath,
+						// ftl相对路径
+						path: changePathname,
+						groupName: groupName,
+						branchName: branchName,
+						originalUrl: originalUrl,
+						url: url
+					};
+				}
+			}
+		});
 };
 
 redirectUrl = function(url, groupName, branchName) {
@@ -208,10 +208,10 @@ redirectUrl = function(url, groupName, branchName) {
 		}
 	}
 	return execParse(funs)
-	.then(function(res) {
-		res = res || url;
-		return res;
-	});
+		.then(function(res) {
+			res = res || url;
+			return res;
+		});
 };
 // 重定向其中一个url
 redirectOneUrl = function(url, reg, redirect) {

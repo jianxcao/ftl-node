@@ -24,99 +24,99 @@ var regStartslash = /^(\\|\/).+/;
 exports = module.exports = function serveFtl(port) {
   	return function serveFtl(req, res, next) {
 	//  重置错误提示
-	consoleErrors = [];
-	var webPort = req.port;
-	var pathObject = req.pathObject;
-	var ext = pathObject.ext;
-	var tmpFilePaths;
-	var jarVersion = "";
-	webPort = +webPort;
-	//  需要在控制台输出的错误
-	// 其内的每个元素是一个 object，object包括  message属性和 stack属性
-	ext = ext.toLowerCase();
-	if (ext && ext === "ftl") {
-		try{
-			Promise.resolve(pathObject)
-			.then(function(pathObject) {
-				var commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
-				jarVersion = "";
-				if (commandConfig && commandConfig.jarVersion) {
-					jarVersion = commandConfig.jarVersion;
-				}
-				setJarFile(jarVersion, commandConfig.rootPath);
-				//	回收生成的临时文件
-				req.on('close', function () {
-					deleteFiles(tmpFilePaths);
-				});
-				req.on('end', function () {
-					deleteFiles(tmpFilePaths);
-				});
-				tmpFilePaths = [];
-				return {
-					pathObject: pathObject,
-					commandConfig: commandConfig
-				};
-				// 获取全局的ftl假数据
-			})
-			.then(function(result) {
-				return getFtlData()
-				.then(function(data) {
-					result.data = data;
-					return result;
-				});
-			})
-			// 解析里面所有的include，模拟出假数据
-			.then(function(result) {
-				var pathObject = result.pathObject;
-				return parseInclude({
-					basePath: pathObject.basePath,
-					tmpFilePaths: tmpFilePaths,
-					req: req,
-					res: res,
-					groupName: pathObject.groupName,
-					branchName: pathObject.branchName
-				}, pathObject.fullPath)
-				.then(function(newFullPath) {
-					pathObject.newPath = newFullPath.replace(pathObject.basePath, "");
-					return result;
-				});
-			})
-			// 获取res中的一些数据
-			.then(function(result) {
-				return getReq(req, result.data, webPort).then(function(data) {
-					result.data = data;
-					return result;
-				});
-			})
-			// 调用java解析ftl
-			.then(function(result) {
-				var pathObject = result.pathObject;
-				var data = result.data;
-				var commandConfig = result.commandConfig;
-				return parseFtl({
-					tmpFilePaths: tmpFilePaths,
-					rootPath: pathObject.basePath, 
-					ftlPath: pathObject.newPath,
-					req: req,
-					res: res,
-					data: data,
-					// freemarker 版本大于等于2.3.24新增可以自动转码输出内容，该功能与 <#escape>标签相互冲突,使用后不能使用<#escape></#noescape>
-					ftlFormat: !!commandConfig.ftlFormat
-				}, !!commandConfig.isMockAjax);
-			})
-			.catch(function(err) {
-				if (typeof err === "string") {
-					err = new Error(err);
-				}
-				next(err);
-			});
-		} catch(e) {
-			next(e);
+		consoleErrors = [];
+		var webPort = req.port;
+		var pathObject = req.pathObject;
+		var ext = pathObject.ext;
+		var tmpFilePaths;
+		var jarVersion = "";
+		webPort = +webPort;
+		//  需要在控制台输出的错误
+		// 其内的每个元素是一个 object，object包括  message属性和 stack属性
+		ext = ext.toLowerCase();
+		if (ext && ext === "ftl") {
+			try{
+				Promise.resolve(pathObject)
+					.then(function(pathObject) {
+						var commandConfig = getProjectConfig(pathObject.groupName, pathObject.branchName);
+						jarVersion = "";
+						if (commandConfig && commandConfig.jarVersion) {
+							jarVersion = commandConfig.jarVersion;
+						}
+						setJarFile(jarVersion, commandConfig.rootPath);
+						//	回收生成的临时文件
+						req.on('close', function () {
+							deleteFiles(tmpFilePaths);
+						});
+						req.on('end', function () {
+							deleteFiles(tmpFilePaths);
+						});
+						tmpFilePaths = [];
+						return {
+							pathObject: pathObject,
+							commandConfig: commandConfig
+						};
+						// 获取全局的ftl假数据
+					})
+					.then(function(result) {
+						return getFtlData()
+							.then(function(data) {
+								result.data = data;
+								return result;
+							});
+					})
+				// 解析里面所有的include，模拟出假数据
+					.then(function(result) {
+						var pathObject = result.pathObject;
+						return parseInclude({
+							basePath: pathObject.basePath,
+							tmpFilePaths: tmpFilePaths,
+							req: req,
+							res: res,
+							groupName: pathObject.groupName,
+							branchName: pathObject.branchName
+						}, pathObject.fullPath)
+							.then(function(newFullPath) {
+								pathObject.newPath = newFullPath.replace(pathObject.basePath, "");
+								return result;
+							});
+					})
+				// 获取res中的一些数据
+					.then(function(result) {
+						return getReq(req, result.data, webPort).then(function(data) {
+							result.data = data;
+							return result;
+						});
+					})
+				// 调用java解析ftl
+					.then(function(result) {
+						var pathObject = result.pathObject;
+						var data = result.data;
+						var commandConfig = result.commandConfig;
+						return parseFtl({
+							tmpFilePaths: tmpFilePaths,
+							rootPath: pathObject.basePath, 
+							ftlPath: pathObject.newPath,
+							req: req,
+							res: res,
+							data: data,
+							// freemarker 版本大于等于2.3.24新增可以自动转码输出内容，该功能与 <#escape>标签相互冲突,使用后不能使用<#escape></#noescape>
+							ftlFormat: !!commandConfig.ftlFormat
+						}, !!commandConfig.isMockAjax);
+					})
+					.catch(function(err) {
+						if (typeof err === "string") {
+							err = new Error(err);
+						}
+						next(err);
+					});
+			} catch(e) {
+				next(e);
+			}
+		} else {
+			next();
 		}
-	} else {
-		next();
-	}
-  };
+	};
 };
 
 // 获取ftl数据
@@ -208,16 +208,16 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 			}
 			// 更新fullPath
 			return parseInclude(opt, currentAbsolutePath)
-			.then(function(includePath) {
+				.then(function(includePath) {
 				// path发生变化，证明引入的ftl中有假数据
-				if (includePath !== currentAbsolutePath) {
+					if (includePath !== currentAbsolutePath) {
 					// 用生成的临时文件代替当前文件路径
-					tmp = matches[0].replace(currentPath, path.relative(dirname, includePath));
-					tmp = tmp.replace(/\\/g, "/");
-					fileContent = fileContent.replace(matches[0], tmp);
-				}
-				return fileContent;
-			});
+						tmp = matches[0].replace(currentPath, path.relative(dirname, includePath));
+						tmp = tmp.replace(/\\/g, "/");
+						fileContent = fileContent.replace(matches[0], tmp);
+					}
+					return fileContent;
+				});
 		} else {
 			return Promise.resolve(fileContent);
 		}
@@ -232,12 +232,12 @@ parseMatchInclude = function(opt, matches, fileContent, dirname) {
 			branchName: opt.branchName
 		})
 		// 成功或者是把都返回数据
-		.then(function(data) {
-			var dataString = parseToFtlData(data);
-			return fileContent.replace(matches[0], dataString);
-		}, function() {
-			return fileContent;
-		});
+			.then(function(data) {
+				var dataString = parseToFtlData(data);
+				return fileContent.replace(matches[0], dataString);
+			}, function() {
+				return fileContent;
+			});
 	}
 };
 // 创建文件并返回path
@@ -361,17 +361,17 @@ getOneModuleData = function(options) {
 	// 远程假数据
 	if (ext === 'html' || ext === 'do' || ext === 'htm' || ext === "action" || ext === "") {
 		return parseRemote
-		.getFtlData({
-			url: currentPath,
-			groupName: groupName,
-			branchName: branchName,
-		}).
+			.getFtlData({
+				url: currentPath,
+				groupName: groupName,
+				branchName: branchName,
+			}).
 		// 成功或者失败都返回数据
-		then(function(data) {
-			return data;
-		}, function() {
-			return data;
-		});
+			then(function(data) {
+				return data;
+			}, function() {
+				return data;
+			});
 	} else {
 		return Promise.resolve(data);
 	}
@@ -452,9 +452,9 @@ parseFtl = function(opt, isMockAjax) {
 			stdout.on('data', function(chunk) {
 				rightData += chunk.toString();
 			})
-			.on('end', function() {
-				resolve(rightData);
-			});
+				.on('end', function() {
+					resolve(rightData);
+				});
 		}),
 		new Promise(function(resolve) {
 			var wrongData = "";
@@ -465,43 +465,43 @@ parseFtl = function(opt, isMockAjax) {
 			});
 		})
 	])
-	.then(function(result) {
-		var data = {
-			rightData: result[0],
-			wrongData: result[1]
-		};
-		if (data.rightData) {
-			var finalData = data.rightData;
-			var reg = /<\/body>/;
-			var message = data.wrongData.replace(/"|'|\\/g, "\\$&").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
-			tmpFilePaths.forEach(function(val) {
-				val = path.basename(val);
-				var realVal = val.replace(/^(.*)__tmp.*.ftl$/, "$1.ftl");
-				var reg = new RegExp(val,"g");
-				message = message.replace(reg, realVal);
-			});
-			var messages = message.split(/\\r\\n/);
-			var consoleError='<script> if (window.console && console.log && console.group) {'+ getFtlConsoleErrorString(messages) + getConsoleErrors() + '}  </script>';
-			reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData += consoleError);
-			// 需要ajax mock假数据
-			if (isMockAjax) {
-				finalData = insertajaxMock(finalData);
-			}
-			res.send(finalData);
-		} else {
-			// 没有错误ftl输出为空
-			if (!data.wrongData) {
-				if (isMockAjax) {
-					data.rightData = insertajaxMock(data.rightData);
-				}
-				res.send(data.rightData);
-			} else {
-				res.render("500", {
-					message: ['<div>', data.wrongData.replace(/\n/g, "<br>"), '</div>'].join('') || "ftl解析错误"
+		.then(function(result) {
+			var data = {
+				rightData: result[0],
+				wrongData: result[1]
+			};
+			if (data.rightData) {
+				var finalData = data.rightData;
+				var reg = /<\/body>/;
+				var message = data.wrongData.replace(/"|'|\\/g, "\\$&").replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+				tmpFilePaths.forEach(function(val) {
+					val = path.basename(val);
+					var realVal = val.replace(/^(.*)__tmp.*.ftl$/, "$1.ftl");
+					var reg = new RegExp(val,"g");
+					message = message.replace(reg, realVal);
 				});
+				var messages = message.split(/\\r\\n/);
+				var consoleError='<script> if (window.console && console.log && console.group) {'+ getFtlConsoleErrorString(messages) + getConsoleErrors() + '}  </script>';
+				reg.test(finalData) ? (finalData = finalData.replace(reg, consoleError + "</body>")) : (finalData += consoleError);
+				// 需要ajax mock假数据
+				if (isMockAjax) {
+					finalData = insertajaxMock(finalData);
+				}
+				res.send(finalData);
+			} else {
+			// 没有错误ftl输出为空
+				if (!data.wrongData) {
+					if (isMockAjax) {
+						data.rightData = insertajaxMock(data.rightData);
+					}
+					res.send(data.rightData);
+				} else {
+					res.render("500", {
+						message: ['<div>', data.wrongData.replace(/\n/g, "<br>"), '</div>'].join('') || "ftl解析错误"
+					});
+				}
 			}
-		}
-	});
+		});
 };
 // 插入ajax假数据
 insertajaxMock = function(fileContent) {

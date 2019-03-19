@@ -106,26 +106,26 @@ function main(command, options) {
 	var platform = process.platform;
 	connectMsg()
 	// 取到通讯用得服务
-	.then(function (result) {
-		var connectMsgServer = result.server;
-		if (platform === 'win32') {
-			var child = exec(command, options, result.port);
-			process.stdin.pipe(child.stdin);
-			child.stdout.pipe(process.stdout);
-			child.stderr.pipe(process.stderr);
-			child.once('exit', function (s) {
-				process.exit(s);
-			});
-			return Promise.resolve(child);
-		} else if (platform === 'linux' || platform === 'darwin') {
+		.then(function (result) {
+			var connectMsgServer = result.server;
+			if (platform === 'win32') {
+				var child = exec(command, options, result.port);
+				process.stdin.pipe(child.stdin);
+				child.stdout.pipe(process.stdout);
+				child.stderr.pipe(process.stderr);
+				child.once('exit', function (s) {
+					process.exit(s);
+				});
+				return Promise.resolve(child);
+			} else if (platform === 'linux' || platform === 'darwin') {
 			
-			return start(command, options, result.server, result.port);
-		} else {
-			console.error('不支持的操作系统');
-			process.exit(1);
-			return Promise.reject();
-		}
-	});
+				return start(command, options, result.server, result.port);
+			} else {
+				console.error('不支持的操作系统');
+				process.exit(1);
+				return Promise.reject();
+			}
+		});
 }
 
 // 尝试用sudo权限启动
@@ -189,8 +189,8 @@ function sudo (command, options, connectMsgServer, connectMsgPort) {
 	});
 
 	stderr
-	.pipe(stderrStream)
-	.pipe(process.stderr);
+		.pipe(stderrStream)
+		.pipe(process.stderr);
 
 	// 数据直接输出到主进程
 	stdout.pipe(process.stdout);
