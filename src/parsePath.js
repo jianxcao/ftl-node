@@ -10,6 +10,7 @@ var querystring = require('querystring');
 var Promise = require('promise');
 var getProjectConfig = require('../src/getProjectConfig');
 var URL = require('url');
+var fileNotFoundErr = require('./tools').fileNotFoundErr;
 var parsePath, parseOneGroup, parseBranch, parseOneBranch, redirectUrl, execParse, redirectOneUrl, contentOneUrl;
 
 /**
@@ -33,12 +34,12 @@ parsePath = function(url) {
 		}
 		return execParse(funs).then(function(res) {
 			if (!res) {
-				return Promise.reject('没有找到可用的分支');
+				return Promise.reject(fileNotFoundErr('没有找到可用的分支'));
 			}
 			return res;
 		});
 	} else {
-		return Promise.reject('请至少配置一个可以用的分组');
+		return Promise.reject(fileNotFoundErr('请至少配置一个可以用的分组'));
 	}
 };
 

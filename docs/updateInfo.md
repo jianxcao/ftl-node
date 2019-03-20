@@ -145,3 +145,6 @@
 
 ## V2.3.3 (2018年09月29日)
 1. parsePath contentOneUrl健壮性修改，增加可返回promise
+
+## V2.4.0 (2018年09月29日)
+1. run.config.js增加mock属性

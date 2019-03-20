@@ -23,7 +23,7 @@ var getFtlData, parseInclude, createFile, deleteFiles,
 var regStartslash = /^(\\|\/).+/;
 exports = module.exports = function serveFtl(port) {
   	return function serveFtl(req, res, next) {
-	//  重置错误提示
+		//  重置错误提示
 		consoleErrors = [];
 		var webPort = req.port;
 		var pathObject = req.pathObject;

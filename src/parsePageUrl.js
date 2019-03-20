@@ -52,7 +52,7 @@ exports = module.exports = function parsePageUrl() {
 				} else {
 					fs.lstat(absPath, function(err, status) {
 						if (err) {
-							return next(err);
+							return next(tools.fileNotFoundErr('can not find ' + absPath));
 						}
 						pathObject.isDirectory = status.isDirectory();
 						req.pathObject = pathObject;

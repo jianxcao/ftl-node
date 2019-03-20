@@ -22,6 +22,7 @@ var tools = require('./tools'),
 	url = require('url'),
 	catProxy = require('catproxy'),
 	defDeploy = require('./cfgProp'),
+	serverMock = require('./serverMock'),
 	parseRemote = require('./parseRemote/parseRemoteMock');
 var app = express();
 var defCfg = defDeploy.cfg;
@@ -80,6 +81,16 @@ var comInit = function() {
 			res: res
 		});
 	});
+	app.use(serverMock());
+	// 万一用户直接赋值body，express是不支持的，所以变成send方法
+	app.use(function (req, res, next) {
+		if (res.body) {
+			return res.send(res.body);
+		}
+		if (!res.finished) {
+			next();
+		}
+	});
 	app.use(parseSet());
 	app.use(cookieParser());
 	app.use(session({
@@ -89,7 +100,7 @@ var comInit = function() {
 	}));
 	// 解析参数
 	app.use(bodyParser.urlencoded({ extended: false }));
-
+	app.use(bodyParser.json());
 	// 运用静态文件路径---即生成一个路径表明当前文件路径
 	app.use(serverDir());
 	// 运用静态文件模块
@@ -116,10 +127,11 @@ var createAutoProxy = function() {
 	}, false);
 	// 没有出错的情况下
 	proxy
+		// .use(serverMock())
 		.use(parsePageUrl())
 		// 找到本地地址
 		.use(function(req, res, next) {
-		// 这里的err指得时parsePath失败
+			// 这里的err指得时parsePath失败
 			var isLocalIp = req.isLocalIp;
 			var serverPort = +req.serverPort;
 			var port = +req.port;
@@ -132,22 +144,18 @@ var createAutoProxy = function() {
 		})
 		// 没找到本地地址
 		.use(function(err, req, res, next) {
-		// 这里的err指得时parsePath失败
+			// 这里的err指得时parsePath失败
 			var	urlObject = url.parse(req.url),
 				pathname = urlObject.pathname,	
 				extname = path.extname(pathname);
 			var isLocalIp = req.isLocalIp;
 			var serverPort = +req.serverPort;
 			var port = +req.port;
-			// 本机静态资源
-			if (isServerStatic.test(pathname) || !config.get('autoProxy')) {
-				return app(req, res);
-			}
+			// 进代理服务器
 			if ((!isLocalIp && extname !== '.ftl') || (isLocalIp && serverPort !== port)) {
 				next();
-			} else {
-				next(err);
 			}
+			app(req, res);
 		});
 	return proxy.init()
 		.then(function(){

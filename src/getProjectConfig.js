@@ -15,13 +15,11 @@ var config = require('../src/config');
 var path = require('path');
 var log = require('../src/log');
 var RcFinder = require('rcfinder');
-module.exports = find = function(groupName, branchName) {
-	var rootPath = getRootPath(groupName, branchName);
-	var config, fullPath, rcFinder;
-	// 成功获取了跟路径
+
+function findPath (rootPath) {
+	var config, rcFinder;
 	if (rootPath) {
 		rootPath = path.normalize(rootPath);
-		fullPath = path.join(rootPath, "run.config.js");
 		rcFinder = new RcFinder('run.config.js', {
 			loader: function(p) {
 				try{
@@ -42,7 +40,14 @@ module.exports = find = function(groupName, branchName) {
 		});
 		return rcFinder.find(rootPath);
 	}
+}
+
+var find = function(groupName, branchName) {
+	var rootPath = getRootPath(groupName, branchName);
+	// 成功获取了跟路径
+	return findPath(rootPath);
 };
+find.findPath = findPath;
 
 // 获取项目的根路径
 var getRootPath = function(groupName, branchName) {
@@ -96,3 +101,5 @@ var findBranch = function(groupName, branchName) {
 	}
 	return retVal;
 };
+
+module.exports = find;

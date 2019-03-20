@@ -109,3 +109,10 @@ exports.tmpPath = (function () {
 	}
 	return dirPath;
 })();
+
+
+exports.fileNotFoundErr = function (message) {
+	var error = new Error(message || 'can not find file');
+	error.type = 'ftl-node-file-not-found';
+	return error;
+};
