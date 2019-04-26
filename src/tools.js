@@ -105,7 +105,7 @@ exports.tmpPath = (function () {
 	var exits = fs.existsSync(dirPath);
 	// 目录不存在
 	if (!exits) {
-		fs.mkdir(dirPath);
+		fs.mkdirSync(dirPath);
 	}
 	return dirPath;
 })();

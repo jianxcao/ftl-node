@@ -153,7 +153,7 @@ var createAutoProxy = function() {
 			var port = +req.port;
 			// 进代理服务器
 			if ((!isLocalIp && extname !== '.ftl') || (isLocalIp && serverPort !== port)) {
-				next();
+				return next();
 			}
 			app(req, res);
 		});
