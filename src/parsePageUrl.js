@@ -43,6 +43,11 @@ exports = module.exports = function parsePageUrl() {
 		pathname = path.normalize(pathname);
 		parsePath(fullUrl)
 			.then(function(pathObject) {
+				if (pathObject.headers) {
+					for (let key in pathObject.headers) {
+						res.setHeader(key, pathObject.headers[key]);
+					}
+				}
 				var absPath = pathObject.fullPath;
 				pathObject.ext = path.extname(pathObject.path).slice(1);
 				// 已经有内容

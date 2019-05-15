@@ -11,7 +11,7 @@ var Promise = require('promise');
 var getProjectConfig = require('../src/getProjectConfig');
 var URL = require('url');
 var fileNotFoundErr = require('./tools').fileNotFoundErr;
-var parsePath, parseOneGroup, parseBranch, parseOneBranch, redirectUrl, execParse, redirectOneUrl, contentOneUrl;
+var parsePath, parseOneGroup, parseBranch, parseOneBranch, redirectUrl, execParse, reduceExec, redirectOneUrl, contentOneUrl, headersOneUrl;
 
 /**
  * 根据配置文件和当前路径解析出一个合理的文件路径，解析成功则返回文件路径
@@ -111,10 +111,15 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 		exists;
 	return redirectUrl(originalUrl, groupName, branchName)
 		.then(function(url) {
-			var content;
+			var content, headers;
 			// 直接由用户设置了内容
-			if (url && url.url && url.content) {
-				content = url.content;
+			if (url && url.url ) {
+				if (url.content) {
+					content = url.content;
+				}
+				if (url.headers) {
+					headers = url.headers;
+				}
 				url = url.url;
 			}
 			changePathname = URL.parse(url).pathname;
@@ -154,7 +159,8 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 					branchName: branchName,
 					originalUrl: originalUrl,
 					url: url,
-					content
+					content,
+					headers
 				};
 			}
 			if (p) {
@@ -172,7 +178,8 @@ parseOneBranch = function(basePath, groupName, branchName, current,  originalUrl
 						groupName: groupName,
 						branchName: branchName,
 						originalUrl: originalUrl,
-						url: url
+						url: url,
+						headers
 					};
 				}
 			}
@@ -185,7 +192,7 @@ redirectUrl = function(url, groupName, branchName) {
 	if (commandConfig && commandConfig.routes && commandConfig.routes.length) {
 		for(var i = 0, l = commandConfig.routes.length; i < l; i++) {
 			tmp = commandConfig.routes[i];
-			if (tmp && tmp.test && (tmp.redirect || typeof tmp.content === 'function')) {
+			if (tmp && tmp.test && (tmp.redirect || typeof tmp.content === 'function' || typeof tmp.headers === 'function')) {
 				type = typeof tmp.test;
 				if (type === "string") {
 					reg = new RegExp(type);
@@ -193,12 +200,17 @@ redirectUrl = function(url, groupName, branchName) {
 					reg =  tmp.test;
 				}
 				if (reg && reg.test(url)) {
-					if (tmp.redirect) {
+					if (tmp.headers) {
+						funs.push({
+							fun: headersOneUrl,
+							param: [url, reg, tmp.headers]
+						});
+					} else if (tmp.redirect) {
 						funs.push({
 							fun: redirectOneUrl,
 							param: [url, reg, tmp.redirect]
 						});
-					} else {
+					} else if (tmp.content){
 						funs.push({
 							fun: contentOneUrl,
 							param: [url, reg, tmp.content]
@@ -208,11 +220,15 @@ redirectUrl = function(url, groupName, branchName) {
 			}
 		}
 	}
-	return execParse(funs)
+	return reduceExec(funs)
 		.then(function(res) {
 			res = res || url;
 			return res;
-		});
+		})
+		.catch(function(e) {
+			console.error(e);
+			return url;
+		}); 
 };
 // 重定向其中一个url
 redirectOneUrl = function(url, reg, redirect) {
@@ -220,27 +236,37 @@ redirectOneUrl = function(url, reg, redirect) {
 	if (typeof redirect === "string") {
 		url = url.replace(reg, redirect);
 		if (checkUrl.test(url)) {
-			return url;
+			return {
+				url
+			};
 		}
 	} else if (redirect instanceof Function) {
 		nUrl = redirect(url);
 		// 返回的是一个string
 		if (typeof nUrl === 'string') {
 			if (checkUrl.test(nUrl)) {
-				return nUrl;
+				return {
+					url: nUrl
+				};
 			}
 		// 返回一个promise对象
 		} else if (nUrl && nUrl.then){
 			return nUrl.then(function(myUrl) {
 				if (checkUrl.test(myUrl)) {
-					return nUrl;
+					return {
+						url: nUrl
+					};
 				} else {
-					return url;
+					return {
+						url
+					};
 				}
 			});
 		}
 	}
-	return url;
+	return {
+		url
+	};
 
 };
 
@@ -251,13 +277,35 @@ contentOneUrl = function (url, reg, content) {
 		const res = content(url) || {};
 		// promise直接返回，但是结果必须是带url和content的字段否则会被忽略
 		if (res.then) {
-			return res;
+			return res.then(function(result) {
+				return result.content ?  Object.assign({ url: url }, result) : { url };
+			});
 		}
-		return res.url && res.content ?  res : url;
+		return res.content ?  Object.assign({ url: url} , res) : { url };
 	} catch (err) {
 		log.error(err);
 	}
-	return url;
+	return {
+		url
+	};
+};
+
+headersOneUrl = function(url, reg, headers) {
+	try {
+		const res = headers(url) || {};
+		// promise直接返回，但是结果必须是带url和content的字段否则会被忽略
+		if (res.then) {
+			return res.then(function(result) {
+				return result.headers ?  Object.assign({ url: url }, result) : url;
+			});
+		}
+		return res.headers ?  Object.assign({ url: url }, res) : url;
+	} catch (err) {
+		log.error(err);
+	}
+	return {
+		url
+	};
 };
 /**
  * 按tasks的顺序执行promise
@@ -284,7 +332,6 @@ execParse = function(tasks, index) {
 		result = Promise.resolve(result);
 	}
 	return result.then(function(res) {
-		// console.log(res, "res");
 		if (res) {
 			return res;
 		}
@@ -293,6 +340,26 @@ execParse = function(tasks, index) {
 		} else {
 			return '';
 		}
+	});
+};
+
+reduceExec = function (tasks) {
+	if (!tasks || !tasks.length) {
+		return Promise.resolve();
+	}
+	const pm = tasks.reduceRight(function (res, current) {
+		let result = current.fun.apply(null, current.param);
+		if (!result || !result.then) {
+			result = Promise.resolve(result);
+		}
+		res.push(result);
+		return res;
+	}, []);
+	return Promise.all(pm).then(function (res) {
+		return res.reduce(function (r, current) {
+			Object.assign(r, current);
+			return r;
+		}, {});
 	});
 };
 // parsePath.execParse = execParse;

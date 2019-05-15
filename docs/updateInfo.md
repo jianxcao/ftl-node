@@ -152,3 +152,8 @@
 ## V2.4.2 (2018年09月29日)
 1. 修复node 10版本不能用问题
 2. 修复代理出错问题
+
+
+## V2.5.0 (2018年09月29日)
+1. run.config.js 增加headers方法，可以修改headers
+2. fix serverMock watch bug

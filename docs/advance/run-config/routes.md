@@ -21,6 +21,24 @@
         redirect: new Promise(function (resolve) {
             resolve(url);
         })
+    },{
+        test: /aaa.*/,
+        // 直接修改aaa返回的内容
+        content: new Promise(function (resolve) {
+            resolve({
+                content: 'test111'
+            });
+        })
+    },{
+        test: /aaa.*/,
+        // 直接修改aaa返回的的res的headers,这个规则可以和 其他规则共存
+        content: new Promise(function (resolve) {
+            resolve({
+                headers: {
+                    'test': 111
+                }
+            });
+        })
     }]
 
 }

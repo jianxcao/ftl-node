@@ -71,6 +71,8 @@ function parseOneCommand (commandConfig, req) {
 			  }, mock));
 			if (errors && errors.length) {
 				console.error(errors);
+			} else {
+				cache[rootPath] = parseObj;
 			}
 		}
 		// 找到解析对象
