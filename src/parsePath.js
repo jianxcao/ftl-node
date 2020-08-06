@@ -222,6 +222,7 @@ redirectUrl = function(url, groupName, branchName) {
 	}
 	return reduceExec(funs)
 		.then(function(res) {
+			console.log(res, url);
 			res = res || url;
 			return res;
 		})
